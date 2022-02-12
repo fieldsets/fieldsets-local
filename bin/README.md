@@ -1,0 +1,2 @@
+# Scripts
+This directory contains local utility scripts to execute applications within the containers instantiated by fieldsets-local. These scripts should have no requirements on the developers local environment and should execute within running containers.

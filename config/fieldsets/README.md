@@ -1,0 +1,1 @@
+This config repository can be thought of as your scripting environment. This container allows you to set a CMD in docker to run or to implement your own init scripts.

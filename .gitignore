@@ -1,0 +1,22 @@
+.env
+
+#ignore most of what is in src
+src/*
+!src
+!src/.gitkeep
+!src/apps
+!src/apps/README.md
+!src/plugins
+!src/plugins/README.md
+!src/scrapers
+!src/services/README.md
+!src/services
+!src/services/README.md
+!src/metrics
+!src/metrics/README.md
+
+
+# Editor output
+.vscode/
+.editorconfig
+

@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<clickhouse>
+    <named_collections>
+        <local_connection>
+            <host from_env="CLICKHOUSE_HOST"/>
+            <port>9000</port>
+            <user from_env="CLICKHOUSE_USER"/>
+            <password from_env="CLICKHOUSE_PASSWORD"/>
+        </local_connection>
+        <postgres_connection>
+            <host from_env="POSTGRES_HOST"/>
+            <port from_env="POSTGRES_PORT"/>
+            <user from_env="POSTGRES_USER"/>
+            <password from_env="POSTGRES_PASSWORD"/>
+        </postgres_connection>
+    </named_collections>
+</clickhouse>

@@ -1,0 +1,1 @@
+{"__schema":{"types":[{"kind":"INTERFACE","name":"Set","possibleTypes":[{"name":"FieldSet"},{"name":"Member"},{"name":"Account"},{"name":"Role"}]},{"kind":"INTERFACE","name":"Coordinate","possibleTypes":[{"name":"Zoom"},{"name":"Center"}]}]}}

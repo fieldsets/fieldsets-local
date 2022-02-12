@@ -1,0 +1,186 @@
+version: '3.7'
+services:
+    fieldsets-zookeeper:
+        image: wurstmeister/zookeeper
+        container_name: fieldsets-zookeeper
+        environment:
+            ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_PORT:-2181}
+            ZOOKEEPER_TICK_TIME: 2000
+        ports:
+            - "${ZOOKEEPER_PORT:-2181}:${ZOOKEEPER_PORT:-2181}"
+        networks:
+            default:
+                ipv4_address: 172.28.0.2
+
+    fieldsets-kafka:
+        image: wurstmeister/kafka
+        container_name: fieldsets-kafka
+        ports:
+            - "${KAFKA_PORT:-9092}:${KAFKA_PORT:-9092}"
+        expose:
+            - "1${KAFKA_PORT:-9092}"
+        depends_on:
+            - fieldsets-zookeeper
+        environment:
+            KAFKA_BROKER_ID: 1
+            KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+            KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+            KAFKA_CREATE_TOPICS: "${KAFKA_DATA_TOPIC:-fieldsets_messages}:1:1" # Do not use hyphens in topic name. Only underscores.
+            KAFKA_ZOOKEEPER_CONNECT: fieldsets-zookeeper:${ZOOKEEPER_PORT:-2181}
+            KAFKA_LISTENERS: INSIDE://0.0.0.0:1${KAFKA_PORT:-9092},OUTSIDE://0.0.0.0:${KAFKA_PORT:-9092}
+            KAFKA_ADVERTISED_LISTENERS: INSIDE://fieldsets-kafka:1${KAFKA_PORT:-9092},OUTSIDE://fieldsets-kafka:${KAFKA_PORT:-9092}
+            KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+            KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+            default:
+                ipv4_address: ${KAFKA_HOST:-172.28.0.3}
+    
+    fieldsets-clickhouse:
+        build:
+            context: ./
+            dockerfile: ./config/clickhouse/Dockerfile-clickhouse
+            args:
+                CLICKHOUSE_VERSION: ${CLICKHOUSE_VERSION:-22}
+                POSTGRES_VERSION: ${POSTGRES_VERSION:-13}
+        container_name: fieldsets-clickhouse
+        environment:
+            - CLICKHOUSE_UID=${LOCAL_UID:-1000}
+            - CLICKHOUSE_GID=${LOCAL_GID:-1000}
+            - CLICKHOUSE_HOST=${CLICKHOUSE_HOST:-172.28.0.5}
+            - CLICKHOUSE_USER=${CLICKHOUSE_USER:-fieldsets}
+            - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-fieldsets}
+            - CLICKHOUSE_DB=${CLICKHOUSE_DB:-fieldsets}
+            - POSTGRES_USER=${POSTGRES_USER:-fieldsets}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-fieldsets}
+            - POSTGRES_HOST=${POSTGRES_HOST:-172.28.0.7}
+            - POSTGRES_DB=${POSTGRES_DB:-fieldsets}
+            - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+            - POSTGRES_VERSION=${POSTGRES_VERSION:-13}
+        ulimits:
+            nofile:
+                soft: 262144
+                hard: 262144
+        depends_on:
+            - fieldsets-zookeeper
+            - fieldsets-kafka
+            - fieldsets-postgres
+        volumes:
+            - ./config/clickhouse/users.xml:/etc/clickhouse-server/users.xml
+            - ./config/clickhouse/config.xml:/etc/clickhouse-server/config.xml
+            - ./config/clickhouse/named_collection.xml:/etc/clickhouse-server/config.d/named_collection.xml
+            - ./config/clickhouse/functions:/etc/clickhouse-server/functions
+            - ./config/clickhouse/initdb:/docker-entrypoint-initdb.d
+            - clickhouse-data:/var/lib/clickhouse
+            - clickhouse-logs:/var/log/clickhouse-server
+        ports:
+            - ${CLICKHOUSE_PORT:-8123}:${CLICKHOUSE_PORT:-8123}
+        networks:
+            default:
+                ipv4_address: ${CLICKHOUSE_HOST:-172.28.0.5}
+
+    fieldsets:
+        container_name: fieldsets
+        cap_add:
+            - NET_ADMIN
+            - SYS_MODULE
+        build:
+            context: ./
+            dockerfile: ./config/fieldsets/Dockerfile-fieldsets
+            args:
+                TIMEZONE: ${TIMEZONE:-America/New_York}
+                POSTGRES_VERSION: ${POSTGRES_VERSION:-13}
+                POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+                CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
+        environment:
+            PUID: ${LOCAL_UID:-1000}
+            PGID: ${LOCAL_GID:-1000}
+            KAFKA_HOST: ${KAFKA_HOST:-172.28.0.3}
+            KAFKA_PORT: ${KAFKA_PORT:-9092}
+            KAFKA_DATA_TOPIC: ${KAFKA_DATA_TOPIC:-fieldsets_messages} # Do not use hyphens in topic name. Only underscores.
+            CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-172.28.0.5}
+            CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
+            CLICKHOUSE_DB: ${CLICKHOUSE_DB:-fieldsets}
+            CLICKHOUSE_USER: ${CLICKHOUSE_USER:-fieldsets}
+            CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-fieldsets}
+            POSTGRES_VERSION: ${POSTGRES_VERSION:-13}
+            POSTGRES_USER: ${POSTGRES_USER:-fieldsets}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fieldsets}
+            POSTGRES_HOST: ${POSTGRES_HOST:-172.28.0.7}
+            POSTGRES_DB: ${POSTGRES_DB:-fieldsets}
+            POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+        sysctls: 
+            - net.ipv6.conf.all.disable_ipv6=0
+            - net.ipv4.conf.all.rp_filter=2
+        depends_on:
+            - fieldsets-clickhouse
+            - fieldsets-postgres
+        volumes:
+            - ./config/fieldsets/initdb:/docker-entrypoint-initdb.d
+            - ./config/fieldsets/entrypoint-fieldsets.sh:/entrypoint-fieldsets.sh
+        networks:
+            default:
+                ipv4_address: 172.28.0.6
+
+    fieldsets-postgres:
+        build:
+            context: ./
+            dockerfile: ./config/postgres/Dockerfile-postgres
+            args:
+                POSTGRES_VERSION: ${POSTGRES_VERSION:-13}
+                CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
+        container_name: fieldsets-postgres
+        ports:
+            - ${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}
+        environment:
+            KAFKA_HOST: ${KAFKA_HOST:-172.28.0.3}
+            KAFKA_PORT: ${KAFKA_PORT:-9092}
+            KAFKA_DATA_TOPIC: ${KAFKA_DATA_TOPIC:-fieldsets_messages} # Do not use hyphens in topic name. Only underscores.
+            CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-172.28.0.5}
+            CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
+            CLICKHOUSE_DB: ${CLICKHOUSE_DB:-fieldsets}
+            CLICKHOUSE_USER: ${CLICKHOUSE_USER:-fieldsets}
+            CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-fieldsets}
+            POSTGRES_VERSION: ${POSTGRES_VERSION:-13}
+            POSTGRES_USER: ${POSTGRES_USER:-fieldsets}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fieldsets}
+            POSTGRES_HOST: ${POSTGRES_HOST:-172.28.0.7}
+            POSTGRES_DB: ${POSTGRES_DB:-fieldsets}
+            POSTGRES_INITDB_WALDIR: /var/lib/postgresql/logs
+        stop_signal: SIGTERM
+        stop_grace_period: 1m30s
+        depends_on:
+            - fieldsets-kafka
+        volumes:         
+            - ./config/postgres/initdb:/docker-entrypoint-initdb.d
+            - postgres-data:/var/lib/postgresql/data
+            - postgres-logs:/var/lib/postgresql/logs
+        networks:
+            default:
+                ipv4_address: ${POSTGRES_HOST:-172.28.0.7}
+    
+volumes:
+    clickhouse-data:
+        driver: local
+        name: fieldsets-clickhouse-data
+    clickhouse-logs:
+        driver: local
+        name: fieldsets-clickhouse-logs
+    postgres-data:
+        driver: local
+        name: fieldsets-postgres-data
+    postgres-logs:
+        driver: local
+        name: fieldsets-postgres-logs
+
+networks:
+    default:
+        driver: bridge
+        name: fieldsets_network
+        attachable: true
+        ipam:
+            config:
+            - subnet: 172.28.0.0/24
+
+    
