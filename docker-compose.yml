@@ -10,7 +10,7 @@ services:
             - "${ZOOKEEPER_PORT:-2181}:${ZOOKEEPER_PORT:-2181}"
         networks:
             default:
-                ipv4_address: 172.28.0.2
+                ipv4_address: ${ZOOKEEPER_HOST:-172.28.0.2}
 
     fieldsets-kafka:
         image: wurstmeister/kafka
@@ -116,12 +116,13 @@ services:
         depends_on:
             - fieldsets-clickhouse
             - fieldsets-postgres
+            - fieldsets-mongo
         volumes:
             - ./config/fieldsets/initdb:/docker-entrypoint-initdb.d
             - ./config/fieldsets/entrypoint-fieldsets.sh:/entrypoint-fieldsets.sh
         networks:
             default:
-                ipv4_address: 172.28.0.6
+                ipv4_address: ${FIELDSETS_HOST:-172.28.0.6}
 
     fieldsets-postgres:
         build:
@@ -159,6 +160,16 @@ services:
         networks:
             default:
                 ipv4_address: ${POSTGRES_HOST:-172.28.0.7}
+
+    fieldsets-mongo:
+        image: mongo
+        container_name: fieldsets-mongo
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-fieldsets}
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-fieldsets}
+        networks:
+            default:
+                ipv4_address: ${MONGO_HOST:-172.28.0.8}
     
 volumes:
     clickhouse-data:
