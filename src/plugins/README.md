@@ -1,1 +1,0 @@
-This directory is part of the fieldset-local enviroment core. These libraries should be used to build any applications but for the most part should remain unedited.
