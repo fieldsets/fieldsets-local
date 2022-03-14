@@ -1,0 +1,1 @@
+Utilize this directory for your custom applications. Feel free to update your local .gitmodules file to automate your own's team's dev environment for easier onboarding of new team members.

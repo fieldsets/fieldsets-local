@@ -1,13 +1,26 @@
 .env
 
 #ignore most of what is in src
-src/*
-!src/.gitkeep
+src/apps/*
+!src/apps/.gitkeep
 !src/apps/README.md
+
+src/plugins/*
+!src/plugins/.gitkeep
 !src/plugins/README.md
+
+src/scrapers/*
+!src/scrapers/.gitkeep
 !src/services/README.md
+
+src/services/*
+!src/services/.gitkeep
 !src/services/README.md
+
+src/metrics/*
+!src/metrics/.gitkeep
 !src/metrics/README.md
+
 config/fieldsets/initdb/*
 !config/fieldsets/initdb/00-init-db.sh
 !config/fieldsets/initdb/README.md
