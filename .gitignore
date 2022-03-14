@@ -14,9 +14,15 @@ src/*
 !src/services/README.md
 !src/metrics
 !src/metrics/README.md
+config/fieldsets/initdb/*
+!config/fieldsets/initdb/00-init-db.sh
+!config/fieldsets/initdb/README.md
 
 
 # Editor output
 .vscode/
 .editorconfig
 
+
+# Local Netlify folder
+.netlify

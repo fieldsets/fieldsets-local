@@ -2,14 +2,14 @@
 set -e
 
 # Create our data tables and relational architecture.
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_USER" <<-EOSQL
-	CREATE SCHEMA $POSTGRES_DB;
-	CREATE SCHEMA clickhouse;
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+	CREATE SCHEMA fieldsets;
 	CREATE SCHEMA messages;
 	CREATE SCHEMA documents;
+	CREATE SCHEMA texts;
 
-	CREATE TYPE store_type AS ENUM ('profile', 'record', 'connection', 'document', 'message', 'sequence');
-	CREATE TYPE field_type AS ENUM ('string', 'number', 'object', 'list', 'bool', 'date', 'ts');
+	CREATE TYPE store_type AS ENUM ('profile', 'record', 'connection', 'document', 'message', 'sequence', 'text', 'none');
+	CREATE TYPE field_type AS ENUM ('string', 'number', 'decimal', 'object', 'list', 'bool', 'date', 'ts', 'function');
 	CREATE TYPE field_value AS (
 		"string"		TEXT,
 		"number"		BIGINT,
@@ -18,7 +18,8 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_USER" <<
 		"list" 			TEXT[],
 		"bool" 			BOOLEAN,
 		"date" 			DATE,
-		"ts"			TIMESTAMP
+		"ts"			TIMESTAMP,
+		"function"		JSONB
 	);
 
 	/**

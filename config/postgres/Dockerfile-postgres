@@ -4,6 +4,8 @@ FROM postgres:${POSTGRES_VERSION}
 ENV DEBIAN_FRONTEND='noninteractive'
 ARG POSTGRES_VERSION
 ARG CLICKHOUSE_PORT
+ARG FDW_PATH
+ENV PKG_CONFIG_PATH=${FDW_PATH}/mongo_fdw/mongo-c-driver/src/libmongoc/src:${FDW_PATH}/mongo_fdw/mongo-c-driver/src/libbson/src
 
 # Install wireguard packges
 RUN apt-get update && \
@@ -33,20 +35,21 @@ RUN apt-get update && \
         libzstd-dev \
         librdkafka-dev && \
     apt-get clean && \
-    cd /tmp/ && \
+    cd ${FDW_PATH} && \
     git clone https://github.com/adjust/clickhouse_fdw.git && \
     cd clickhouse_fdw && \
     mkdir build && cd build && \
     cmake .. && \
     make && make install && \
-    cd /tmp/ && \
+    cd ${FDW_PATH} && \
     git clone https://github.com/adjust/kafka_fdw && \
     cd kafka_fdw && \
     make && make install && \
-    cd /tmp/ && \
+    cd ${FDW_PATH} && \
     git clone https://github.com/EnterpriseDB/mongo_fdw.git && \
     cd mongo_fdw && \
-    bash ./autogen.sh --with-master
+    bash ./autogen.sh --with-master && \
+    make USE_PGXS=1 && make USE_PGXS=1 install
 
 
 # Clickhouse ports

@@ -1,0 +1,29 @@
+    /**
+	 * Documents are your standard NOSQL document data store such as MongoDB or CouchDB
+	 * Schema should be stored in the parent fieldset meta data using the "schema" key.
+	 * As new documents are added into this table, triggers will process new rows and utilizing the schema create corresponding entries in either the record, sequence or profile tables.
+	 */
+    CREATE TABLE $POSTGRES_DB.documents (
+        id          BIGSERIAL,
+		fieldset_id	BIGINT NOT NULL,
+		document	JSONB NULL,
+		meta		JSONB NULL,
+		ts			TIMESTAMP NULL DEFAULT NOW(),
+		parsed		BOOLEAN DEFAULT FALSE,
+		FOREIGN KEY (fieldset_id) REFERENCES $POSTGRES_DB.fieldsets(id)
+	) PARTITION BY RANGE(ts);
+	/**
+	 * Insert triggers will check the year and create a n
+	 */
+	CREATE TABLE $POSTGRES_DB.documents_2025 PARTITION OF $POSTGRES_DB.documents FOR VALUES FROM ('2025-01-01'::TIMESTAMP) TO ('2025-12-31'::TIMESTAMP); 
+	CREATE TABLE $POSTGRES_DB.documents_2024 PARTITION OF $POSTGRES_DB.documents FOR VALUES FROM ('2024-01-01'::TIMESTAMP) TO ('2024-12-31'::TIMESTAMP); 
+	CREATE TABLE $POSTGRES_DB.documents_2023 PARTITION OF $POSTGRES_DB.documents FOR VALUES FROM ('2023-01-01'::TIMESTAMP) TO ('2023-12-31'::TIMESTAMP);
+	CREATE TABLE $POSTGRES_DB.documents_2022 PARTITION OF $POSTGRES_DB.documents FOR VALUES FROM ('2022-01-01'::TIMESTAMP) TO ('2022-12-31'::TIMESTAMP);
+	CREATE TABLE $POSTGRES_DB.documents_2021 PARTITION OF $POSTGRES_DB.documents FOR VALUES FROM ('2021-01-01'::TIMESTAMP) TO ('2021-12-31'::TIMESTAMP);
+	CREATE TABLE $POSTGRES_DB.documents_2020 PARTITION OF $POSTGRES_DB.documents FOR VALUES FROM ('2020-01-01'::TIMESTAMP) TO ('2020-12-31'::TIMESTAMP);
+	CREATE TABLE $POSTGRES_DB.documents_2019 PARTITION OF $POSTGRES_DB.documents FOR VALUES FROM ('2019-01-01'::TIMESTAMP) TO ('2019-12-31'::TIMESTAMP);
+	CREATE TABLE $POSTGRES_DB.documents_2018 PARTITION OF $POSTGRES_DB.documents FOR VALUES FROM ('2018-01-01'::TIMESTAMP) TO ('2018-12-31'::TIMESTAMP);
+	CREATE TABLE $POSTGRES_DB.documents_2017 PARTITION OF $POSTGRES_DB.documents FOR VALUES FROM ('2017-01-01'::TIMESTAMP) TO ('2017-12-31'::TIMESTAMP);
+	CREATE TABLE $POSTGRES_DB.documents_2016 PARTITION OF $POSTGRES_DB.documents FOR VALUES FROM ('2016-01-01'::TIMESTAMP) TO ('2016-12-31'::TIMESTAMP);
+	CREATE TABLE $POSTGRES_DB.documents_2015 PARTITION OF $POSTGRES_DB.documents FOR VALUES FROM ('2015-01-01'::TIMESTAMP) TO ('2015-12-31'::TIMESTAMP);
+	CREATE TABLE $POSTGRES_DB.documents_archive PARTITION OF $POSTGRES_DB.documents DEFAULT;

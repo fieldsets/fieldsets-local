@@ -13,6 +13,8 @@ RUN echo "deb http://deb.debian.org/debian/ buster-backports main" > /etc/apt/so
 ARG POSTGRES_VERSION
 ARG POSTGRES_PORT
 ARG CLICKHOUSE_PORT
+ARG MONGO_PORT
+ARG MONGO_VERSION
 
 # Install packges
 RUN apt-get update && \
@@ -56,10 +58,17 @@ RUN apt-get update && \
         unzip && \
     curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/apt.postgresql.org.gpg >/dev/null && \
     echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+    wget -qO - https://www.mongodb.org/static/pgp/server-${MONGO_VERSION}.0.asc | apt-key add - && \
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/${MONGO_VERSION}.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-${MONGO_VERSION}.0.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        postgresql-client-${POSTGRES_VERSION} && \
-    apt-get clean
+        postgresql-client-${POSTGRES_VERSION} \ 
+        mongocli \
+        mongodb-mongosh && \
+    apt-get clean && \
+    wget -O /tmp/mongodb-tools.deb https://fastdl.mongodb.org/tools/db/mongodb-database-tools-debian92-x86_64-100.5.2.deb && \
+    dpkg -i /tmp/mongodb-tools.deb && \
+    rm -f /tmp/mongodb-tools.deb 
 
 # Add main work dir to PATH
 WORKDIR /fieldsets
@@ -72,5 +81,8 @@ EXPOSE ${POSTGRES_PORT}
 EXPOSE 9000
 EXPOSE 9009
 EXPOSE ${CLICKHOUSE_PORT}
+
+# Mongo port
+EXPOSE ${MONGO_PORT}
 
 ENTRYPOINT ["/entrypoint-fieldsets.sh"]

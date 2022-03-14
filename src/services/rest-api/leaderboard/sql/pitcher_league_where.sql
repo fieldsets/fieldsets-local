@@ -1,0 +1,1 @@
+    and pitcherleague = %s

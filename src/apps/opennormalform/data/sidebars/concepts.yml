@@ -1,0 +1,39 @@
+- group: Basics
+  items:
+    - title: Introduction
+      link: /concepts/introduction/
+    - title: Quickstart
+      link: /concepts/quickstart/
+    - title: Architecture Overview
+      link: /concepts/architecture/
+    - title: Supported Networks
+      link: /concepts/networks/
+    - title: Deployments
+      link: /concepts/deployments/
+    - title: Projects using Ocean
+      link: /concepts/projects-using-ocean/
+
+- group: Compute-to-Data
+  items:
+    - title: Introduction
+      link: /concepts/compute-to-data/
+
+- group: Specifying Assets
+  items:
+    - title: DIDs & DDOs
+      link: /concepts/did-ddo/
+    - title: DDO Metadata
+      link: /concepts/ddo-metadata/
+
+- group: Contribute
+  items:
+    - title: Ways to Contribute
+      link: /concepts/contributing/
+    - title: Get Funding
+      link: /concepts/get-funding/
+    - title: Reporting Vulnerabilities
+      link: /concepts/vulnerabilities/
+    - title: Legal Requirements when Contributing Code
+      link: /concepts/legal-reqs/
+    - title: Code of Conduct
+      link: /concepts/code-of-conduct/

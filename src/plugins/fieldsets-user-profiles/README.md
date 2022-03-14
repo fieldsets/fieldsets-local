@@ -1,1 +1,1 @@
-Placeholder for implementation of passport.js on the fieldsets data framework
+Set FieldSets User Schema for implementation of passport.js
