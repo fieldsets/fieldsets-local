@@ -1,0 +1,1 @@
+This directory contains all of the docker containers. You can enable and disable most containers through via environment variables.

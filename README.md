@@ -61,17 +61,18 @@ Any GUI with a TCP connection on port 8123 can connect locally to [http://0.0.0.
 ### PostgreSQL
 Any GUI with a TCP connection on port 8123 can connect locally to [http://0.0.0.0:5432](http://0.0.0.0:5432). A personal preference is for [DBeaver](https://dbeaver.io/download/). We use this primarily as a row store. We don't interact directly through Postgres, as we map the tables found here to tables in Clickhouse utilizing their internal Postgres and external dictionary data structure.
 
-## TO DO:
-- *neo4j*: Currently our data structure uses foreign keys in PostGreSQL to join records, fields, sets, fieldsets, profiles and roles. Any RDBMS the fieldsets data structure framework depends on relies on the ability to set foreign keys. If a particular project
+## DATA STORE TYPES (default)
 
-## DATA TABLE TYPES
+## Structured Stores
+- *Profiles*: (PostgreSQL)
+- *Records*: (ClickHouse), PostgreSQL
+- *Sequences*: (ClickHouse), PostgreSQL
 
-Profiles: PostgreSQL, MySQL, MariaDB
-Documents: MongoDB, CouchDB
-Messages: Kafka, RabbitMQ
-Records: InfluxDB, Druid, TimescaleDB, ClickHouse
-Sequences: Clickhouse, Druid, Cassandra
+# Semi Structured Stores
+- *Documents*: (MongoDB), Redis
+- *Messages*: (Kafka), PostgreSQL, ClickHouse, MongoDB
 
-Metrics: ClickHouse, Cassandra, Druid
-Cache: Redis, ClickHouse
-Search: Elasticsearch, OpenSearch
+# Generated Data Stores
+- *Cache*: (Redis), ClickHouse
+- *Search*: (Elasticsearch)
+- *Metrics*: (ClickHouse), PostgreSQL

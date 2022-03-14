@@ -1,5 +1,5 @@
 ARG CLICKHOUSE_VERSION
-FROM yandex/clickhouse-server:${CLICKHOUSE_VERSION:-latest}
+FROM yandex/clickhouse-server:${CLICKHOUSE_VERSION:-22}
 
 ENV DEBIAN_FRONTEND='noninteractive'
 ARG POSTGRES_VERSION
