@@ -5,7 +5,7 @@ set -e
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
 	CREATE SCHEMA fieldsets;
 	CREATE SCHEMA messages;
-	CREATE SCHEMA documents;
+	CREATE SCHEMA collections;
 	CREATE SCHEMA texts;
 
 	CREATE TYPE store_type AS ENUM ('profile', 'record', 'connection', 'document', 'message', 'sequence', 'text', 'none');

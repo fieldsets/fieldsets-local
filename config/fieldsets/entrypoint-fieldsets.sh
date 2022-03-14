@@ -100,23 +100,23 @@ if [[ ! -f "$FILE" ]]; then
 fi
 
 # Mongo
-#FILE=/fieldsets/mongo.init
-#if [[ ! -f "$FILE" ]]; then
-#
-#    psql -v ON_ERROR_STOP=1 --host "$POSTGRES_HOST" --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-#        CREATE FOREIGN TABLE IF NOT EXISTS $POSTGRES_DB.documents (
-#            id          BIGSERIAL,
-#		    fieldset_id	BIGINT NOT NULL,
-#		    document	JSONB NULL,
-#		    meta		JSONB NULL,
-#		    ts			TIMESTAMP NULL DEFAULT NOW(),
-#		    parsed		BOOLEAN DEFAULT FALSE
-#	    ) 
-#        SERVER mongo_server OPTIONS (database '$MONGO_DB', collection 'documents');
-#	EOSQL
-#
-#	touch "$FILE"
-#fi
+FILE=/fieldsets/mongo.init
+if [[ ! -f "$FILE" ]]; then
+
+    psql -v ON_ERROR_STOP=1 --host "$POSTGRES_HOST" --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+        CREATE FOREIGN TABLE IF NOT EXISTS $POSTGRES_DB.collections (
+            id          BIGSERIAL,
+		    fieldset_id	BIGINT NOT NULL,
+		    document	JSONB NULL,
+		    meta		JSONB NULL,
+		    ts			TIMESTAMP NULL DEFAULT NOW(),
+		    parsed		BOOLEAN DEFAULT FALSE
+	    ) 
+        SERVER mongo_server OPTIONS (database '$MONGO_DB', collection 'fieldsets_collections');
+	EOSQL
+
+	touch "$FILE"
+fi
 
 # After everything has booted, run any custom scripts.
 for f in /docker-entrypoint-initdb.d/*.sh; do 

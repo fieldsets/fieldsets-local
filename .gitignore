@@ -5,14 +5,19 @@ src/*
 !src
 !src/.gitkeep
 !src/apps
+src/apps/*
 !src/apps/README.md
 !src/plugins
+src/plugins/*
 !src/plugins/README.md
 !src/scrapers
+src/scrapers/*
 !src/services/README.md
 !src/services
+src/services/*
 !src/services/README.md
 !src/metrics
+src/metrics/*
 !src/metrics/README.md
 config/fieldsets/initdb/*
 !config/fieldsets/initdb/00-init-db.sh
@@ -22,7 +27,6 @@ config/fieldsets/initdb/*
 # Editor output
 .vscode/
 .editorconfig
-
 
 # Local Netlify folder
 .netlify

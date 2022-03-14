@@ -1,1 +1,0 @@
-Set FieldSets User Schema for implementation of passport.js

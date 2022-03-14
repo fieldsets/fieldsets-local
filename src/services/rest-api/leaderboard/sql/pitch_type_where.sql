@@ -1,1 +1,0 @@
-    and pitchtype = %s

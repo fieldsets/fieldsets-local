@@ -1,1 +1,0 @@
-having sum(num_pa) >= %s
