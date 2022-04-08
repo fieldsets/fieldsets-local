@@ -3,6 +3,7 @@ services:
     fieldsets-zookeeper:
         image: wurstmeister/zookeeper
         container_name: fieldsets-zookeeper
+        hostname: fieldsets-zookeeper
         environment:
             ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_PORT:-2181}
             ZOOKEEPER_TICK_TIME: 2000
@@ -15,6 +16,7 @@ services:
     fieldsets-kafka:
         image: wurstmeister/kafka
         container_name: fieldsets-kafka
+        hostname: fieldsets-kafka
         ports:
             - "${KAFKA_PORT:-9092}:${KAFKA_PORT:-9092}"
         expose:
@@ -45,6 +47,7 @@ services:
                 CLICKHOUSE_VERSION: ${CLICKHOUSE_VERSION:-22}
                 POSTGRES_VERSION: ${POSTGRES_VERSION:-13}
         container_name: fieldsets-clickhouse
+        hostname: fieldsets-clickhouse
         environment:
             - CLICKHOUSE_UID=${LOCAL_UID:-1000}
             - CLICKHOUSE_GID=${LOCAL_GID:-1000}
@@ -81,10 +84,6 @@ services:
                 ipv4_address: ${CLICKHOUSE_HOST:-172.28.0.5}
 
     fieldsets:
-        container_name: fieldsets
-        cap_add:
-            - NET_ADMIN
-            - SYS_MODULE
         build:
             context: ./
             dockerfile: ./config/fieldsets/Dockerfile-fieldsets
@@ -95,6 +94,9 @@ services:
                 CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
                 MONGO_VERSION: ${MONGO_VERSION:-5}
                 MONGO_PORT: ${MONGO_PORT:-27017}
+                GRAPHQL_PORT: ${GRAPHQL_PORT:-5000}
+        container_name: fieldsets
+        hostname: fieldsets
         environment:
             PUID: ${LOCAL_UID:-1000}
             PGID: ${LOCAL_GID:-1000}
@@ -106,6 +108,8 @@ services:
             CLICKHOUSE_DB: ${CLICKHOUSE_DB:-fieldsets}
             CLICKHOUSE_USER: ${CLICKHOUSE_USER:-fieldsets}
             CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-fieldsets}
+            GRAPHQL_HOST: ${GRAPHQL_HOST:-localhost}
+            GRAPHQL_PORT: ${GRAPHQL_PORT:-5000}
             POSTGRES_VERSION: ${POSTGRES_VERSION:-13}
             POSTGRES_USER: ${POSTGRES_USER:-fieldsets}
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fieldsets}
@@ -119,9 +123,6 @@ services:
             MONGO_DB: ${MONGO_DB:-fieldsets}
             MONGO_PORT: ${MONGO_PORT:-27017}
             MONGO_LOAD_SAMPLE_DATA: ${MONGO_LOAD_SAMPLE_DATA:-0}
-        sysctls: 
-            - net.ipv6.conf.all.disable_ipv6=0
-            - net.ipv4.conf.all.rp_filter=2
         depends_on:
             - fieldsets-clickhouse
             - fieldsets-postgres
@@ -129,6 +130,7 @@ services:
         volumes:
             - ./config/fieldsets/initdb:/docker-entrypoint-initdb.d
             - ./config/fieldsets/entrypoint-fieldsets.sh:/entrypoint-fieldsets.sh
+            - ./src:/fieldsets
         networks:
             default:
                 ipv4_address: ${FIELDSETS_HOST:-172.28.0.6}
@@ -142,6 +144,7 @@ services:
                 CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
                 FDW_PATH: /usr/src
         container_name: fieldsets-postgres
+        hostname: fieldsets-postgres
         ports:
             - ${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}
         environment:
@@ -180,6 +183,7 @@ services:
     fieldsets-mongo:
         image: mongo:${MONGO_VERSION:-5}
         container_name: fieldsets-mongo
+        hostname: fieldsets-mongo
         environment:
             MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-fieldsets}
             MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-fieldsets}

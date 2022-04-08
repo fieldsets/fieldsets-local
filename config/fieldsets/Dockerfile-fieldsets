@@ -5,19 +5,17 @@ ARG TIMEZONE
 ENV TZ=${TIMEZONE}
 ENV DEBIAN_FRONTEND='noninteractive'
 
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
-# Add debian backports
-RUN echo "deb http://deb.debian.org/debian/ buster-backports main" > /etc/apt/sources.list.d/buster-backports.list
-
 ARG POSTGRES_VERSION
 ARG POSTGRES_PORT
 ARG CLICKHOUSE_PORT
+ARG GRAPHQL_PORT
 ARG MONGO_PORT
 ARG MONGO_VERSION
 
 # Install packges
-RUN apt-get update && \
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
+    echo "deb http://deb.debian.org/debian/ buster-backports main" > /etc/apt/sources.list.d/buster-backports.list && \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
         software-properties-common \
         apt-transport-https \
@@ -65,10 +63,16 @@ RUN apt-get update && \
         postgresql-client-${POSTGRES_VERSION} \ 
         mongocli \
         mongodb-mongosh && \
-    apt-get clean && \
     wget -O /tmp/mongodb-tools.deb https://fastdl.mongodb.org/tools/db/mongodb-database-tools-debian92-x86_64-100.5.2.deb && \
     dpkg -i /tmp/mongodb-tools.deb && \
-    rm -f /tmp/mongodb-tools.deb 
+    rm -f /tmp/mongodb-tools.deb && \
+    cd /tmp && \
+    curl -sL https://deb.nodesource.com/setup_17.x -o nodesource_setup.sh && \
+    chmod +x ./nodesource_setup.sh && ./nodesource_setup.sh && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        nodejs && \
+    apt-get clean
 
 # Add main work dir to PATH
 WORKDIR /fieldsets
@@ -84,5 +88,8 @@ EXPOSE ${CLICKHOUSE_PORT}
 
 # Mongo port
 EXPOSE ${MONGO_PORT}
+
+# Graphql Port
+EXPOSE ${GRAPHQL_PORT}
 
 ENTRYPOINT ["/entrypoint-fieldsets.sh"]

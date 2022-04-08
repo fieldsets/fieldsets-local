@@ -1,6 +1,8 @@
 .env
 
 #ignore most of what is in src
+src/*.init
+
 src/apps/*
 !src/apps/.gitkeep
 !src/apps/README.md
