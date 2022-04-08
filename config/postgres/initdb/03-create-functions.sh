@@ -55,4 +55,25 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
         END;
     \$function\$ LANGUAGE plpgsql;
 
+
+    CREATE OR REPLACE FUNCTION fieldsets.create_document_record(fieldset_id BIGINT, token_name TEXT) RETURNS VOID
+    AS \$function\$
+        DECLARE
+            record_name TEXT;
+            record_sql TEXT;
+        BEGIN
+            record_name := FORMAT('%s_records', token_name);
+
+            -- Check Clickhouse FDW extension 
+            BEGIN 
+                EXECUTE 'SELECT "clickhousedb_raw_query"::regproc';
+                RAISE NOTICE 'Creating ClickHouse Dictionary %', dict_name;
+                record_sql := FORMAT('SELECT public.clickhousedb_raw_query( CREATE TABLE %I (id UInt64, updated_ts DateTime DEFAULT NOW() Codec(DoubleDelta, LZ4)) Engine = Dictionary(%I))', record_name, record_name);
+                EXECUTE record_sql;
+            EXCEPTION WHEN undefined_function THEN
+                RAISE NOTICE 'ClickHouse FDW not installed';
+            END;
+        END;
+    \$function\$ LANGUAGE plpgsql;
+
 EOSQL

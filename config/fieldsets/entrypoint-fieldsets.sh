@@ -123,5 +123,8 @@ for f in /docker-entrypoint-initdb.d/*.sh; do
     bash "$f"; 
 done 
 
-	
+# Set up both the graphql server and the flask REST API
+cd /fieldsets/services/fieldsets-graphql-server
+npm install
+node apollo-server.js
 
