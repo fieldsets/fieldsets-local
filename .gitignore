@@ -1,0 +1,17 @@
+.env
+*.env
+
+*.pem
+*_rsa
+id_rsa
+
+./src/*
+!./src
+!./src/README.md
+
+./init/99-init-pipeline.sh
+
+# Editor output
+.vscode/
+.editorconfig
+.DS_Store
