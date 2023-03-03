@@ -1,3 +1,4 @@
 [submodule "lib"]
 	path = lib
-	url = git@github.com:Fieldsets/fieldsets-pipeline-libs.git
+	url = https://github.com/fieldsets/fieldsets-libs.git
+	branch =  main
