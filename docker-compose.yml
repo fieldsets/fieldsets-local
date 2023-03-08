@@ -1,7 +1,7 @@
 version: '3.7'
 services:
     fieldsets-local:
-        image: ${CONTAINER_REGISTRY:-fieldsets}/fieldsets-local:${FIELDSETS_LOCAL_VERSION:-"latest"}
+        image: ${CONTAINER_REGISTRY:-fieldsets}/fieldsets-local:${FIELDSETS_LOCAL_VERSION:-latest}
         build:
             context: ./
             dockerfile: ${FIELDSETS_LOCAL_CONFIG_PATH:-./}Dockerfile
@@ -11,11 +11,8 @@ services:
         container_name: fieldsets-local
         hostname: fieldsets-local
         ports:
-            - ${VBDB_TUNNEL_PORT:-5433}:${VBDB_TUNNEL_PORT:-5433}
-            - ${FIELDSETSPHI_TUNNEL_PORT:-5434}:${FIELDSETSPHI_TUNNEL_PORT:-5434}
-            - ${FIELDSETSDB_TUNNEL_PORT:-5435}:${FIELDSETSDB_TUNNEL_PORT:-5435}
             - ${EVENTS_TUNNEL_PORT:-5436}:${EVENTS_TUNNEL_PORT:-5436}
-        tty: ${ENABLE_TERMINAL:-false}
+        tty: ${ENABLE_TERMINAL:-true}
         environment:
             ENVIRONMENT: ${ENVIRONMENT:-dev-local}
             EVENT_LOGGER_HOST: ${EVENT_LOGGER_HOST:-172.28.0.2}
@@ -45,33 +42,11 @@ services:
             SSH_HOST: ${SSH_HOST:-}
             SSH_PORT: ${SSH_PORT:-22}
             SSH_USER: ${SSH_USER:-}
-            VBDB_USER: ${VBDB_USER:-postgres}
-            VBDB_PASSWORD: ${VBDB_PASSWORD:-}
-            VBDB_HOST: ${VBDB_HOST:-}
-            VBDB_PORT: ${VBDB_PORT:-5432}
-            VBDB_TUNNEL_PORT: ${VBDB_TUNNEL_PORT:-5433}
-            FIELDSETSPHI_USER: ${FIELDSETSPHI_USER:-postgres}
-            FIELDSETSPHI_PASSWORD: ${FIELDSETSPHI_PASSWORD:-}
-            FIELDSETSPHI_HOST: ${FIELDSETSPHI_HOST:-}
-            FIELDSETSPHI_PORT: ${FIELDSETSPHI_PORT:-5432}
-            FIELDSETSPHI_TUNNEL_PORT: ${FIELDSETSPHI_TUNNEL_PORT:-5434}
-            FIELDSETSDB_USER: ${FIELDSETSDB_USER:-postgres}
-            FIELDSETSDB_PASSWORD: ${FIELDSETSDB_PASSWORD:-}
-            FIELDSETSDB_HOST: ${FIELDSETSDB_HOST:-}
-            FIELDSETSDB_PORT: ${FIELDSETSDB_PORT:-5432}
-            FIELDSETSDB_TUNNEL_PORT: ${FIELDSETSDB_TUNNEL_PORT:-5435}
             EVENTS_USER: ${EVENTS_USER:-postgres}
             EVENTS_PASSWORD: ${EVENTS_PASSWORD:-}
             EVENTS_HOST: ${EVENTS_HOST:-172.28.0.7}
             EVENTS_PORT: ${EVENTS_PORT:-5432}
             EVENTS_TUNNEL_PORT: ${EVENTS_TUNNEL_PORT:-5436}
-            DQA_DB_HOST: ${DQA_DB_HOST:-172.28.0.7}
-            DQA_DB_PORT: ${DQA_DB_PORT:-5432}
-            DQA_DB_TUNNEL_PORT: ${DQA_DB_TUNNEL_PORT:-5437}
-            DQA_DB_USER: ${DQA_DB_USER:-postgres}
-            DQA_DB_PASSWORD: ${DQA_DB_PASSWORD:-fieldsets}
-            DQA_DB_NAME: ${DQA_DB_NAME:-postgres}
-            DQA_DB_SCHEMA: ${DQA_DB_SCHEMA:-public}
             ENABLE_DB_SYNC: ${ENABLE_DB_SYNC:-false}
             DB_SYNC_SOURCE_SCHEMA: ${DB_SYNC_SOURCE_SCHEMA:-fieldsets}
             DB_SYNC_TARGET_SCHEMA: ${DB_SYNC_TARGET_SCHEMA:-public}

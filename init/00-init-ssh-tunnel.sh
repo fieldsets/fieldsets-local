@@ -22,7 +22,7 @@ if [[ -n "${SSH_HOST}" ]]; then
     fi
 
     if [[ -n "${EVENTS_HOST}" ]] && [[ "${EVENTS_HOST}" != "${POSTGRES_HOST}" ]]; then
-        echo "Setting up VBDB tunnel....."
+        echo "Setting up SSH tunnel....."
         AUTOSSH_LOGFILE=${AUTOSSH_LOG_PATH}${EVENTS_HOST}.log
         export AUTOSSH_LOGFILE
         autossh -2 -fN -M 20000 -o ServerAliveInterval=60 -o StrictHostKeyChecking=no -4 -L $FIELDSETS_LOCAL_HOST:$EVENTS_TUNNEL_PORT:$EVENTS_HOST:$EVENTS_PORT $SSH_USER@$SSH_HOST -p $SSH_PORT -o ServerAliveInterval=60 -o StrictHostKeyChecking=no

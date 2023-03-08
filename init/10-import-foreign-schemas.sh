@@ -2,7 +2,6 @@
 
 # This script will set up foreign data servers on the target postgresql instance.
 # If the target postgres DB is on AWS, make sure it is not a read replica and that the account used to authenticate has appropriate permissions.
-# Conversly, make sure that VBDB_HOST and FIELDSETS_PHI are read replicas as writes to AWS instances should be done through the production pipeline.
 # This script needs to be run after the DB is up and running. Utilizing fieldsets-local, you can add this script to the init directory when needed.
 
 set -e

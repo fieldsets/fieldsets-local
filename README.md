@@ -60,10 +60,8 @@ cp ./env.example ./.env
 - `LOCAL_UID`: use the command in your terminal `id -u`. Setting the container to have the same user id will allow you to write directly to container volumes without issue.
 - `LOCAL_GID`: use the command in your terminal `id -g`.
 - `SSH_KEY_PATH`: Will default to `~/.ssh/id_rsa`. If you use another key for Fieldsets's jump server add it here if you are using this as a local work environment.
-- `VBDB_USER`, `VBDB_PASSWORD`, `VBDB_HOST`: If you have read access to VBDB, enter your credentials and this environment will add map VBDB as a schema allowing you to query across databases!
-- `FIELDSETSPHI_USER`, `FIELDSETSPHI_PASSWORD`, `FIELDSETSPHI_HOST`: If you have read access to Fieldsets PHI, enter your credentials and this environment will add map VBDB as a schema allowing you to query across databases!
 
-For our remote data stores to work, we will need credentials for our production and clone servers. If you are working outside of AWS, you will need to specify the location of your private key that gives access to the Fieldsets jump server [trampoline.fieldsets.com](trampoline.fieldsets.com) if you are using any private key that is not the default `~/.ssh/id_rsa` key defined for unix like systems. The example env contains all the variables used to configure our pipeline. You can omit or change these variables to help with current deployments. Defaults will be filled in using values defined in the docker-compose file for any omitted values.
+For our remote data stores to work, we will need credentials for our production and clone servers. If you are working outside of AWS, you will need to specify the location of your private key that gives access to the Fieldsets jump server if you are using any private key that is not the default `~/.ssh/id_rsa` key defined for unix like systems. The example env contains all the variables used to configure our pipeline. You can omit or change these variables to help with current deployments. Defaults will be filled in using values defined in the docker-compose file for any omitted values.
 
 ## Running the container
 Now lets get the environment running!
