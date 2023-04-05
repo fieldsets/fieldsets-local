@@ -9,7 +9,8 @@ id_rsa
 !./src
 !./src/README.md
 
-./init/99-init-pipeline.sh
+./plugins/*
+./plugins
 
 # Editor output
 .vscode/

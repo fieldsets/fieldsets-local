@@ -25,7 +25,6 @@ export PRIORITY=0
 #===
 # Includes Methods traperr, wait_for_threads, log
 source /fieldsets-lib/shell/utils.sh
-source /fieldsets-lib/shell/events.sh
 
 ##
 # start: Wrapper start up function. Executes everything in mapped init directory. 
@@ -50,11 +49,10 @@ start() {
 	chmod +x /docker-entrypoint-init.d/*.sh
 	# After everything has booted, run any custom scripts.
 	for f in /docker-entrypoint-init.d/*.sh; do
-		bash "$f"; 
+		bash "$f";
 	done 
 
-	log "Local Startup Complete."
-	event_emitter 'fieldsets-local-container-init' 'local' 'pending' '{}' 
+	log "Local Startup Complete."	
 }
 
 #===

@@ -16,30 +16,23 @@ set -eEa -o pipefail
 export PRIORITY=20
 export PGPASSWORD=${POSTGRES_PASSWORD}
 
-
 #===
 # Functions
 #===
-
-##
-# traperr: Better error handling
-##
-traperr() {
-  echo "ERROR: ${BASH_SOURCE[1]} at about ${BASH_LINENO[0]}"
-}
+source /fieldsets-lib/shell/utils.sh
 
 ##
 # init: execute our sql
 ##
 init() {
-    echo "Creating functions...."    
+    log "Creating functions...."    
     local f
     for f in /fieldsets-sql/functions/*.sql; do
-        echo "Executing: ${f}"
+        log "Executing: ${f}"
         psql -v ON_ERROR_STOP=1 --host "${POSTGRES_HOST}" --port "${POSTGRES_PORT}" --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" -f "${f}"
     done
 
-    echo "Functions created."
+    log "Functions created."
 }
 
 #===

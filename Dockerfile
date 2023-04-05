@@ -60,6 +60,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
     echo "deb [signed-by=/usr/share/keyrings/fluentbit-keyring.gpg] https://packages.fluentbit.io/debian/$(lsb_release -cs) $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/fluent-bit.list && \
     update-ca-certificates && \
     apt-get -y update && \
+    pip3 install virtualenv && \
     apt-get install -y --no-install-recommends \
         fluent-bit \
         clickhouse-client \
@@ -71,9 +72,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
 WORKDIR /fieldsets
 ENV PATH="/fieldsets:${PATH}"
 
-# Clickhouse interserver port
-EXPOSE 9000
-EXPOSE 9009
+# If plugins are available, run as a new layer for this image
+# RUN 
 
 ENTRYPOINT ["/entrypoint.sh"]
 

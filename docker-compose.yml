@@ -10,13 +10,11 @@ services:
                 POSTGRES_VERSION: ${POSTGRES_VERSION:-15}
         container_name: fieldsets-local
         hostname: fieldsets-local
-        ports:
-            - ${EVENTS_TUNNEL_PORT:-5436}:${EVENTS_TUNNEL_PORT:-5436}
         tty: ${ENABLE_TERMINAL:-true}
         environment:
             ENVIRONMENT: ${ENVIRONMENT:-dev-local}
-            EVENT_LOGGER_HOST: ${EVENT_LOGGER_HOST:-172.28.0.2}
-            EVENT_LOGGER_PORT: ${EVENT_LOGGER_PORT:-24224}
+            LOGGER_HOST: ${LOGGER_HOST:-172.28.0.2}
+            LOGGER_PORT: ${LOGGER_PORT:-24224}
             FIELDSETS_LOCAL_VERSION: ${FIELDSETS_LOCAL_VERSION:-latest}
             PUID: ${LOCAL_UID:-1000}
             PGID: ${LOCAL_GID:-1000}
@@ -32,24 +30,16 @@ services:
             POSTGRES_HOST: ${POSTGRES_HOST:-172.28.0.7}
             POSTGRES_DB: ${POSTGRES_DB:-fieldsets}
             POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-            POSTGRES_READER_ROLE: ${POSTGRES_READER_ROLE:-bioinfo_reader}
+            POSTGRES_READER_ROLE: ${POSTGRES_READER_ROLE:-fieldsets_reader_role}
             POSTGRES_READER_ROLE_PASSWORD: ${POSTGRES_READER_ROLE_PASSWORD:-}
-            POSTGRES_WRITER_ROLE: ${POSTGRES_WRITER_ROLE:-bioinfo_writer}
+            POSTGRES_WRITER_ROLE: ${POSTGRES_WRITER_ROLE:-fieldsets_writer_role}
             POSTGRES_WRITER_ROLE_PASSWORD: ${POSTGRES_WRITER_ROLE_PASSWORD:-}
-            POSTGRES_TRIGGER_ROLE: ${POSTGRES_TRIGGER_ROLE:-bioinfo_trigger}
+            POSTGRES_TRIGGER_ROLE: ${POSTGRES_TRIGGER_ROLE:-fieldsets_trigger_role}
             POSTGRES_TRIGGER_ROLE_PASSWORD: ${POSTGRES_TRIGGER_ROLE_PASSWORD:-}
             FIELDSETS_LOCAL_HOST: ${FIELDSETS_LOCAL_HOST:-172.28.0.6}
             SSH_HOST: ${SSH_HOST:-}
             SSH_PORT: ${SSH_PORT:-22}
             SSH_USER: ${SSH_USER:-}
-            EVENTS_USER: ${EVENTS_USER:-postgres}
-            EVENTS_PASSWORD: ${EVENTS_PASSWORD:-}
-            EVENTS_HOST: ${EVENTS_HOST:-172.28.0.7}
-            EVENTS_PORT: ${EVENTS_PORT:-5432}
-            EVENTS_TUNNEL_PORT: ${EVENTS_TUNNEL_PORT:-5436}
-            ENABLE_DB_SYNC: ${ENABLE_DB_SYNC:-false}
-            DB_SYNC_SOURCE_SCHEMA: ${DB_SYNC_SOURCE_SCHEMA:-fieldsets}
-            DB_SYNC_TARGET_SCHEMA: ${DB_SYNC_TARGET_SCHEMA:-public}
             CHECKPOINT_PATH: ${CHECKPOINT_PATH:-/data/checkpoints/}
             DEBUG_MODE: ${DEBUG_MODE:-true}
             LOGGING_ENABLED: ${LOGGING_ENABLED:-false} # Write logs to DB
@@ -57,13 +47,14 @@ services:
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}apt-preferences:/etc/preferences
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}.bashrc:/root/.bashrc
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}.bash_profile:/root/.profile
-            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}init:/docker-entrypoint-init.d
-            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}sql:/fieldsets-sql
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}init/:/docker-entrypoint-init.d/
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}sql/:/fieldsets-sql/
             - ${SSH_KEY_PATH:-~/.ssh/id_rsa}:/root/.ssh/id_rsa
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}entrypoint.sh:/entrypoint.sh
-            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}bin:/fieldsets-bin
-            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}lib:/fieldsets-lib
-            - ${FIELDSETS_LOCAL_SRC_PATH:-./src/}:/fieldsets
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}bin:/fieldsets-bin/
+            - ${FIELDSETS_LIB_PATH:-./lib/}:/fieldsets-lib/
+            - ${FIELDSETS_PLUGINS_PATH:-./plugins/}:/fieldsets-plugins/
+            - ${FIELDSETS_SRC_PATH:-./src/}:/fieldsets/
             - local-data:/data        
         networks:
             default:
@@ -71,7 +62,7 @@ services:
         logging:
             driver: fluentd
             options:
-                fluentd-address: ${EVENT_LOGGER_HOST:-172.28.0.2}:${EVENT_LOGGER_PORT:-24224}
+                fluentd-address: ${LOGGER_HOST:-172.28.0.2}:${LOGGER_PORT:-24224}
                 tag: debug_log.local
                 fluentd-async: "true"
                 env: "PGOPTIONS='-c search_path=pipeline',LOGGING_ENABLED='${LOGGING_ENABLED:-false}'"
@@ -87,6 +78,6 @@ networks:
         attachable: true
         ipam:
             config:
-            - subnet: ${FIELDSETS_LOCAL_NETWORK_SUBNET:-172.28.0.0/24}
+            - subnet: ${FIELDSETS_NETWORK_SUBNET:-172.28.0.0/24}
 
     
