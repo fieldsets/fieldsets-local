@@ -1,6 +1,7 @@
 /**
  * Map Data Store
- * Partitioned on PostgreSQL side for performance. Can be used to create key value parings such as Redis or a ClickHouse Dictionary.
+ * Partitioned on PostgreSQL side for performance.
+ * Mappings are one to one key value pairs. Can be used to create key value parings such as Redis or a ClickHouse Dictionary.
  */
 CREATE TABLE IF NOT EXISTS fieldsets.mappings(
     set_id          BIGINT NOT NULL,
@@ -15,4 +16,3 @@ CREATE TABLE IF NOT EXISTS fieldsets.mappings(
 TABLESPACE mappings;
 
 CREATE TABLE IF NOT EXISTS fieldsets.__default_mappings PARTITION OF fieldsets.mappings DEFAULT TABLESPACE mappings;
-

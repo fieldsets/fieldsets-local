@@ -1,4 +1,4 @@
 [submodule "lib"]
-	path = ./lib
+	path = lib
 	url = https://github.com/fieldsets/fieldsets-lib
 	branch =  main
