@@ -7,6 +7,10 @@ ENV DEBIAN_FRONTEND='noninteractive'
 
 ARG POSTGRES_VERSION
 
+# If the certs directory exists, copy the certs and utilize them.
+ARG BUILD_CONTEXT_PATH
+COPY ${BUILD_CONTEXT_PATH}/cert[s]/* /tmp/certs/
+
 # Install packages
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
     apt-get update && \
@@ -52,13 +56,15 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         libpq5 \
         libpq-dev \
         unzip && \
+    cp /tmp/certs/* /usr/local/share/ca-certificates/ && \
+    cp /tmp/certs/* /etc/ssl/certs/ && \
+    update-ca-certificates --fresh && \
     curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/apt.postgresql.org.gpg >/dev/null && \
     echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
     apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 8919F6BD2B48D754 && \
     echo "deb https://packages.clickhouse.com/deb stable main" | tee /etc/apt/sources.list.d/clickhouse.list && \
     curl https://packages.fluentbit.io/fluentbit.key | gpg --dearmor | tee /usr/share/keyrings/fluentbit-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/fluentbit-keyring.gpg] https://packages.fluentbit.io/debian/$(lsb_release -cs) $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/fluent-bit.list && \
-    update-ca-certificates && \
     apt-get -y update && \
     pip3 install virtualenv && \
     apt-get install -y --no-install-recommends \
@@ -73,7 +79,7 @@ WORKDIR /fieldsets
 ENV PATH="/fieldsets:${PATH}"
 
 # If plugins are available, run as a new layer for this image
-# RUN 
+# RUN
 
 ENTRYPOINT ["/entrypoint.sh"]
 
