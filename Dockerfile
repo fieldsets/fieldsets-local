@@ -9,7 +9,7 @@ ARG POSTGRES_VERSION
 
 # If the certs directory exists, copy the certs and utilize them.
 ARG BUILD_CONTEXT_PATH
-COPY ${BUILD_CONTEXT_PATH}/cert[s]/* /tmp/certs/
+COPY ${BUILD_CONTEXT_PATH}cert[s]/* /tmp/certs/
 
 # Install packages
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \

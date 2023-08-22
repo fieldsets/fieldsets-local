@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS fieldsets.filters (
     parent      BIGINT NOT NULL,
     set_id      BIGINT NOT NULL,
     set_parent  BIGINT NOT NULL,
+    value       FIELD_VALUE,
     created     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ) TABLESPACE filters;

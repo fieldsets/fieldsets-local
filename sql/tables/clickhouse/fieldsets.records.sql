@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS fieldsets.records (
     parent      UInt64,
     set_id      UInt64,
     set_parent  UInt64,
+    value       
     created     DateTime64(3) DEFAULT now64(3)
 )
 ENGINE = MergeTree()

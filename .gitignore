@@ -12,8 +12,8 @@ id_rsa
 ./plugins/*
 ./plugins
 
-./certs
 ./certs/*
+!./certs
 
 # Editor output
 .vscode/
