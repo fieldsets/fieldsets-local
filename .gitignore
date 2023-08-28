@@ -14,6 +14,7 @@ id_rsa
 
 ./certs/*
 !./certs
+!./certs/README.md
 
 # Editor output
 .vscode/
