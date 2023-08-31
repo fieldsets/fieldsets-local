@@ -2,10 +2,10 @@
 
 #===
 # 00-init.sh: Wrapper script for your docker container
-# See shell coding standards for details of formatting. 
+# See shell coding standards for details of formatting.
 # https://github.com/Fieldsets/fieldsets-pipeline/blob/main/docs/developer/coding-standards/shell.md
 #
-# @envvar VERSION | String 
+# @envvar VERSION | String
 # @envvar ENVIRONMENT | String
 #
 #===
@@ -27,7 +27,7 @@ export PRIORITY=0
 source /fieldsets-lib/shell/utils.sh
 
 ##
-# start: Wrapper start up function. Executes everything in mapped init directory. 
+# start: Wrapper start up function. Executes everything in mapped init directory.
 ##
 start() {
 	if [[ ! -d "${DATA_PATH}" ]]; then
@@ -50,9 +50,9 @@ start() {
 	# After everything has booted, run any custom scripts.
 	for f in /docker-entrypoint-init.d/*.sh; do
 		bash "$f";
-	done 
+	done
 
-	log "Local Startup Complete."	
+	log "Local Startup Complete."
 }
 
 #===

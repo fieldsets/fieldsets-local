@@ -55,6 +55,7 @@ services:
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}bin:/fieldsets-bin/
             - ${FIELDSETS_LIB_PATH:-./lib/}:/fieldsets-lib/
             - ${FIELDSETS_PLUGINS_PATH:-./plugins/}:/fieldsets-plugins/
+            - ${FIELDSETS_DATA_PATH:-./data/}:/fieldsets-data/
             - ${FIELDSETS_SRC_PATH:-./src/}:/fieldsets/
             - local-data:/data
         networks:
