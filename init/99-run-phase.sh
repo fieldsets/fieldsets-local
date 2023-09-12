@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #===
-# 30-create-triggers.sh: Create our triggers
+# 99-run-plugins.sh: Run any plugins or application run scripts
 # See shell coding standards for details of formatting.
 # https://github.com/fieldsets/fieldsets/blob/main/docs/developer/coding-standards/shell.md
 #
@@ -16,8 +16,8 @@ set -eEa -o pipefail
 # Variables
 #===
 export PGPASSWORD=${POSTGRES_PASSWORD}
-PRIORITY=00
-last_checkpoint="/docker-entrypoint-init.d/00-init-plugins.sh"
+PRIORITY=99
+last_checkpoint="/docker-entrypoint-init.d/99-run-phase.sh"
 
 #===
 # Functions
@@ -26,19 +26,18 @@ last_checkpoint="/docker-entrypoint-init.d/00-init-plugins.sh"
 source /fieldsets-lib/shell/utils.sh
 
 ##
-# init: Initialize any plugins
+# run: Run Phase is run at every startup
 ##
-init() {
-    log "Initializing Plugins...."
+run() {
+    log "Begin Run Phase...."
     local f
     for f in /fieldsets-plugins/*/; do
-        if [ -f "${f}init.sh" ]; then
-            log "Executing: ${f}init.sh"
-            exec "${f}init.sh"
+        if [ -f "${f}run.sh" ]; then
+            log "Executing: ${f}run.sh"
+            exec "${f}run.sh"
         fi
     done
-
-    log "Plugins Initialized."
+    log "Run Phase Complete..."
 }
 
 #===
@@ -46,6 +45,6 @@ init() {
 #===
 trap traperr ERR
 
-init
+run
 
 ((PRIORITY+=1))
