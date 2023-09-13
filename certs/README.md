@@ -1,0 +1,2 @@
+# Custom Root Certificates
+Drop your custom root certificate file in this directory. It will be processed by `/lib/shell/root-certs.sh` and properly add the certificate. Any certs in this directory are ignored by git.
