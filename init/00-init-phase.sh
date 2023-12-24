@@ -45,6 +45,9 @@ init() {
                 exec "${f}init.sh"
             fi
         done
+
+        find ~+ -maxdepth 4 -mindepth 1 -name 'init.sh'
+
         log "Init Phase Complete."
         touch "${init_phase_dir}${init_phase_lock}"
     fi
