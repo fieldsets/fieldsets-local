@@ -5,9 +5,9 @@
  */
 CREATE TABLE IF NOT EXISTS fieldsets.documents (
     id          BIGINT NOT NULL,
-    field_id    BIGINT NOT NULL,
+    set_id    BIGINT NOT NULL,
     document    JSONB,
     created     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated     TIMESTAMPTZ NOT NULL DEFAULT NOW()
-) PARTITION BY LIST (field_id)
+) PARTITION BY LIST (set_id)
 TABLESPACE documents;

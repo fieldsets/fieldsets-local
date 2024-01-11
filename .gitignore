@@ -1,6 +1,7 @@
 .env
 *.env
 
+*.crt
 *.pem
 *_rsa
 id_rsa

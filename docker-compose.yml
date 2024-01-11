@@ -58,26 +58,9 @@ services:
             - ${FIELDSETS_DATA_PATH:-./data/}:/fieldsets-data/
             - ${FIELDSETS_SRC_PATH:-./src/}:/fieldsets/
             - local-data:/data
-        networks:
-            default:
-                ipv4_address: ${FIELDSETS_LOCAL_HOST:-172.28.0.6}
-        logging:
-            driver: fluentd
-            options:
-                fluentd-address: ${LOGGER_HOST:-172.28.0.2}:${LOGGER_PORT:-24224}
-                tag: debug_log.local
-                fluentd-async: "true"
-                env: "PGOPTIONS='-c search_path=pipeline',LOGGING_ENABLED='${LOGGING_ENABLED:-false}'"
+        
 volumes:
     local-data:
         driver: local
         name: fieldsets-local-data
-
-networks:
-    default:
-        driver: bridge
-        name: fieldsets_network
-        attachable: true
-        ipam:
-            config:
-            - subnet: ${FIELDSETS_NETWORK_SUBNET:-172.28.0.0/24}
+        

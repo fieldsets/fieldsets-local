@@ -1,0 +1,25 @@
+* text=auto
+
+*.ico binary
+*.jpg binary
+*.png binary
+
+Dockerfile eol=lf
+*.gitattributes eol=lf
+*.gitignore eol=lf
+*.gitmodules eol=lf
+*.example eol=lf
+*.txt eol=lf
+*.sh eol=lf
+*.py eol=lf
+*.json eol=lf
+*.js eol=lf
+*.jsx eol=lf
+*.md eol=lf
+*.sql eol=lf
+*.conf eol=lf
+*.yml eol=lf
+*.xml eol= lf
+*.bash* eol=lf
+*.ps1 eol=crlf
+*.psm1 eol=crlf
