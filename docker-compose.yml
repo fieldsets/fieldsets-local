@@ -16,6 +16,10 @@ services:
             ENVIRONMENT: ${ENVIRONMENT:-dev-local}
             LOGGER_HOST: ${LOGGER_HOST:-172.28.0.2}
             LOGGER_PORT: ${LOGGER_PORT:-24224}
+            PLUGINS_PATH: "/fieldsets-plugins/"
+            LIB_PATH: "/fieldsets-lib/"
+            APPS_PATH: "/fieldsets/"
+            DATA_PATH: "/fieldsets-data/"
             FIELDSETS_LOCAL_VERSION: ${FIELDSETS_LOCAL_VERSION:-latest}
             PUID: ${LOCAL_UID:-1000}
             PGID: ${LOCAL_GID:-1000}
@@ -41,6 +45,7 @@ services:
             SSH_HOST: ${SSH_HOST:-}
             SSH_PORT: ${SSH_PORT:-22}
             SSH_USER: ${SSH_USER:-}
+            SSH_KEY_PATH: ${SSH_KEY_PATH:-~/.ssh/}
             CHECKPOINT_PATH: ${CHECKPOINT_PATH:-/data/checkpoints/}
             DEBUG_MODE: ${DEBUG_MODE:-true}
             LOGGING_ENABLED: ${LOGGING_ENABLED:-false} # Write logs to DB
@@ -49,18 +54,17 @@ services:
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}.bashrc:/root/.bashrc
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}.bash_profile:/root/.profile
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}init/:/docker-entrypoint-init.d/
+            - ${SSH_KEY_PATH:-~/.ssh/}:/root/.ssh/
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}sql/:/fieldsets-sql/
-            - ${SSH_KEY_PATH:-~/.ssh/id_rsa}:/root/.ssh/id_rsa
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}entrypoint.sh:/entrypoint.sh
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}bin:/fieldsets-bin/
-            - ${FIELDSETS_LIB_PATH:-./lib/}:/fieldsets-lib/
-            - ${FIELDSETS_PLUGINS_PATH:-./plugins/}:/fieldsets-plugins/
-            - ${FIELDSETS_DATA_PATH:-./data/}:/fieldsets-data/
-            - ${FIELDSETS_SRC_PATH:-./src/}:/fieldsets/
+            - ${FIELDSETS_PATH:-./}lib:/fieldsets-lib/
+            - ${FIELDSETS_PATH:-./}plugins:/fieldsets-plugins/
+            - ${FIELDSETS_PATH:-./}data:/fieldsets-data/
+            - ${FIELDSETS_PATH:-./}src:/fieldsets/
             - local-data:/data
-        
+
 volumes:
     local-data:
         driver: local
         name: fieldsets-local-data
-        

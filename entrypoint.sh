@@ -49,6 +49,7 @@ start() {
 	chmod +x /docker-entrypoint-init.d/*.sh
 	# After everything has booted, run any custom scripts.
 	for f in /docker-entrypoint-init.d/*.sh; do
+		echo $f
 		bash "$f";
 	done
 

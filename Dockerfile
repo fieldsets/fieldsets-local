@@ -27,6 +27,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         vim \
         autossh \
         openssh-client \
+        net-tools \
         jq \
         wget \
         gnupg \
@@ -40,6 +41,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         openssl \
         gcc \
         libc-dev \
+        dnsutils \
         g++ \
         python3 \
         python3-dev \
@@ -67,9 +69,13 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
     echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | tee /etc/apt/sources.list.d/clickhouse.list && \
     curl https://packages.fluentbit.io/fluentbit.key | gpg --dearmor | tee /usr/share/keyrings/fluentbit-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/fluentbit-keyring.gpg] https://packages.fluentbit.io/debian/$(lsb_release -cs) $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/fluent-bit.list && \
+    wget -q https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb -P /tmp/ && \
+    dpkg -i /tmp/packages-microsoft-prod.deb && \
+    rm /tmp/packages-microsoft-prod.deb && \
     apt-get -y update && \
     pip3 install virtualenv && \
     apt-get install -y --no-install-recommends \
+        powershell \
         fluent-bit \
         clickhouse-client \
         pgdg-keyring \
@@ -80,9 +86,6 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
 # Add main work dir to PATH
 WORKDIR /fieldsets
 ENV PATH="/fieldsets:${PATH}"
-
-# If plugins are available, run as a new layer for this image
-# RUN
 
 ENTRYPOINT ["/entrypoint.sh"]
 
