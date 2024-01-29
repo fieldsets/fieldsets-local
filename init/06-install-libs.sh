@@ -23,8 +23,7 @@ source /fieldsets-lib/shell/utils.sh
 # init: execute our sql
 ##
 init() {
-    log "Installing libraries...."    
-    
+    log "Installing libraries...."
     log "Libraries installed."
 }
 
