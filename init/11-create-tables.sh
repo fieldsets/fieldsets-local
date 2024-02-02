@@ -17,7 +17,7 @@ export PGPASSWORD=${POSTGRES_PASSWORD}
 #===
 # Functions
 #===
-source /fieldsets-lib/shell/utils.sh
+source /fieldsets-lib/bash/utils.sh
 
 ##
 # init: execute our sql

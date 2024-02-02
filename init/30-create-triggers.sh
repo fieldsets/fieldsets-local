@@ -23,7 +23,7 @@ last_checkpoint="/docker-entrypoint-init.d/30-create-triggers.sh"
 # Functions
 #===
 
-source /fieldsets-lib/shell/utils.sh
+source /fieldsets-lib/bash/utils.sh
 
 ##
 # init: execute our sql
