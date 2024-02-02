@@ -25,7 +25,6 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         curl \
         procps \
         vim \
-        autossh \
         openssh-client \
         net-tools \
         jq \
@@ -81,7 +80,9 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         pgdg-keyring \
         postgresql-client-${POSTGRES_VERSION:-15} && \
     ln -s /opt/fluent-bit/bin/fluent-bit /usr/local/bin/fluent-bit && \
-    apt-get clean
+    apt-get autoremove -y && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/*
 
 # Add main work dir to PATH
 WORKDIR /fieldsets

@@ -1,63 +1,35 @@
-#!/usr/bin/env bash
+#!/usr/bin/env pwsh
+Param(
+    [Parameter(Mandatory=$false,Position=0)][Int]$priority = 0
+)
+$utils_module_path = [System.IO.Path]::GetFullPath("/fieldsets-lib/pwsh/utils/")
+Import-Module -Function checkDependencies, lockfileExists, createLockfile -Name "$($utils_module_path)/utils.psm1"
 
-#===
-# 30-create-triggers.sh: Create our triggers
-# See shell coding standards for details of formatting.
-# https://github.com/fieldsets/fieldsets/blob/main/docs/developer/coding-standards/shell.md
-#
-# @envvar VERSION | String
-# @envvar ENVIRONMENT | String
-#
-#===
+$padded_priority = $priority.ToString("D2")
+$script_token = "init-phase"
+$lockfile = "$($padded_priority)-$($script_token).complete"
+$lockfile_path = "/data/checkpoints/phases/"
 
-set -eEa -o pipefail
-
-#===
-# Variables
-#===
-export PGPASSWORD=${POSTGRES_PASSWORD}
-PRIORITY=00
-last_checkpoint="/docker-entrypoint-init.d/00-init-phase.sh"
-
-#===
-# Functions
-#===
-
-source /fieldsets-lib/shell/utils.sh
-
-##
-# init: Init Phase is run only on the first startup.
-##
-init() {
-    local init_phase_dir
-    local init_phase_lock
-    init_phase_dir="/fieldsets-data/phases/init/"
-    init_phase_lock="${PRIORITY}-init-phase.complete"
-
-    mkdir -p "${init_phase_dir}"
-    if [[ ! -f "${init_phase_dir}${init_phase_lock}" ]]; then
-        log "Begin Init Phase...."
-        # Plugin Init Scripts should handle locking themselves.
-        local f
-        for f in /fieldsets-plugins/*/; do
-            if [ -f "${f}init.sh" ]; then
-                log "Executing: ${f}init.sh"
-                exec "${f}init.sh"
-            fi
-        done
-
-        find ~+ -maxdepth 4 -mindepth 1 -name 'init.sh'
-
-        log "Init Phase Complete."
-        touch "${init_phase_dir}${init_phase_lock}"
-    fi
+$dependencies_met = checkDependencies
+if ($dependencies_met) {
+    if (! (lockfileExists "$($lockfile_path)/$($lockfile)")) {
+        Set-Location -Path "/fieldsets-plugins/"
+        $plugin_dirs = Get-ChildItem -Path "/fieldsets-plugins/*" -Directory |
+        Select-Object FullName, Name, LastWriteTime, CreationTime
+        # Check to make sure all plugin dependencies are met.
+        foreach ($plugin in $plugin_dirs) {
+            if (Test-Path -Path "$($plugin.FullName)/init.sh") {
+                Write-Information -MessageData "Initializing plugin $($plugin.FullName)" -InformationAction Continue
+                Set-Location -Path "$($plugin.FullName)"
+                chmod +x "$($plugin.FullName)/init.sh"
+                & "bash" -c "exec `"$($plugin.FullName)/init.sh`""
+            }
+        }
+        createLockfile -lockfile "$($lockfile)" -lockfile_path "$($lockfile_path)"
+        [Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token, "User")
+        [Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority, "User")
+    }
+} else {
+    Throw "Missing Dependencies"
 }
-
-#===
-# Main
-#===
-trap traperr ERR
-
-init
-
-((PRIORITY+=1))
+Set-Location -Path "/fieldsets/"

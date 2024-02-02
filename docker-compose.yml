@@ -42,10 +42,6 @@ services:
             POSTGRES_TRIGGER_ROLE: ${POSTGRES_TRIGGER_ROLE:-fieldsets_trigger_role}
             POSTGRES_TRIGGER_ROLE_PASSWORD: ${POSTGRES_TRIGGER_ROLE_PASSWORD:-}
             FIELDSETS_LOCAL_HOST: ${FIELDSETS_LOCAL_HOST:-172.28.0.6}
-            SSH_HOST: ${SSH_HOST:-}
-            SSH_PORT: ${SSH_PORT:-22}
-            SSH_USER: ${SSH_USER:-}
-            SSH_KEY_PATH: ${SSH_KEY_PATH:-~/.ssh/}
             CHECKPOINT_PATH: ${CHECKPOINT_PATH:-/data/checkpoints/}
             DEBUG_MODE: ${DEBUG_MODE:-true}
             LOGGING_ENABLED: ${LOGGING_ENABLED:-false} # Write logs to DB
