@@ -52,7 +52,7 @@ services:
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}init/:/docker-entrypoint-init.d/
             - ${SSH_KEY_PATH:-~/.ssh/}:/root/.ssh/
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}sql/:/fieldsets-sql/
-            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}entrypoint.sh:/entrypoint.sh
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}entrypoint.sh:/docker-entrypoint.sh
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}bin:/fieldsets-bin/
             - ${FIELDSETS_PATH:-./}lib:/fieldsets-lib/
             - ${FIELDSETS_PATH:-./}plugins:/fieldsets-plugins/

@@ -88,6 +88,6 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
 WORKDIR /fieldsets
 ENV PATH="/fieldsets:${PATH}"
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
 
 CMD ["/bin/bash"]

@@ -11,7 +11,7 @@ set -eEa -o pipefail
 # Variables
 #===
 
-export PRIORITY=1
+export PRIORITY=5
 
 #===
 # Functions
