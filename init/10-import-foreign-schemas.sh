@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script will set up foreign data servers on the target postgresql instance.
 # If the target postgres DB is on AWS, make sure it is not a read replica and that the account used to authenticate has appropriate permissions.
