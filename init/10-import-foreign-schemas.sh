@@ -11,7 +11,6 @@ export PGPASSWORD=${POSTGRES_PASSWORD}
 FDFILE="/data/checkpoints/${PRIORITY}-pg-foreign-data-import.complete"
 
 if [[ ! -f "${FDFILE}" ]]; then
-
     # Postgres
     # Create Local File Server for Imports for scraper outputs.
     psql -v ON_ERROR_STOP=1 --host "$POSTGRES_HOST" --port "$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
@@ -22,7 +21,7 @@ if [[ ! -f "${FDFILE}" ]]; then
     # Always allow external sources to be added after initialization as these should be read only.
     echo "Importing remote postgres data schemas......"
 
-    if [[ "${CLICKHOUSE_ENABLED:-false}" == "true" ]]; then
+    if [[ "${ENABLE_STORE:-false}" == "true" ]]; then
         psql -v ON_ERROR_STOP=1 --host "$POSTGRES_HOST" --port "$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
             CREATE EXTENSION IF NOT EXISTS clickhouse_fdw;
             CREATE SERVER IF NOT EXISTS clickhouse_server

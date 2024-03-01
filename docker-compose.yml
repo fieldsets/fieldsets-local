@@ -14,6 +14,10 @@ services:
         tty: ${ENABLE_TERMINAL:-true}
         environment:
             ENVIRONMENT: ${ENVIRONMENT:-dev-local}
+            FIELDSETS_INFRASTRUCTURE_ROLE: ${FIELDSETS_INFRASTRUCTURE_ROLE:-node}
+            FIELDSETS_DB: ${FIELDSETS_DB:-postgres}
+            ENABLE_STORE: ${ENABLE_STORE:-false}
+            FIELDSETS_STORE: ${FIELDSETS_STORE:-clickhouse}
             LOGGER_HOST: ${LOGGER_HOST:-172.28.0.2}
             LOGGER_PORT: ${LOGGER_PORT:-24224}
             PLUGINS_PATH: "/fieldsets-plugins/"
@@ -23,7 +27,6 @@ services:
             FIELDSETS_LOCAL_VERSION: ${FIELDSETS_LOCAL_VERSION:-latest}
             PUID: ${LOCAL_UID:-1000}
             PGID: ${LOCAL_GID:-1000}
-            CLICKHOUSE_ENABLED: ${CLICKHOUSE_ENABLED:-false}
             CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-172.28.0.5}
             CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
             CLICKHOUSE_DB: ${CLICKHOUSE_DB:-fieldsets}
@@ -43,8 +46,8 @@ services:
             POSTGRES_TRIGGER_ROLE_PASSWORD: ${POSTGRES_TRIGGER_ROLE_PASSWORD:-}
             FIELDSETS_LOCAL_HOST: ${FIELDSETS_LOCAL_HOST:-172.28.0.6}
             CHECKPOINT_PATH: ${CHECKPOINT_PATH:-/data/checkpoints/}
-            DEBUG_MODE: ${DEBUG_MODE:-true}
-            LOGGING_ENABLED: ${LOGGING_ENABLED:-false} # Write logs to DB
+            ENABLE_DEBUG_MODE: ${ENABLE_DEBUG_MODE:-true}
+            ENABLE_LOGGING: ${ENABLE_LOGGING:-false} # Write logs to DB
         volumes:
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}apt-preferences:/etc/preferences
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}.bashrc:/root/.bashrc
