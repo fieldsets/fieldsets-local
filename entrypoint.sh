@@ -39,7 +39,7 @@ start() {
 	timeout 90s bash -c "until pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER; do printf '.'; sleep 5; done; printf '\n'"
 	log "PostgreSQL is ready for connections."
 
-	if [[ "${CLICKHOUSE_ENABLED:-false}" == "true" ]]; then
+	if [[ "${ENABLE_STORE:-false}" == "true" ]]; then
 		log "Waiting for Clickhouse container...."
 		timeout 90s bash -c "until curl --silent --output /dev/null http://${CLICKHOUSE_HOST}:${CLICKHOUSE_PORT}/ping; do printf '.'; sleep 5; done; printf '\n'"
 		log "Clickhouse is ready for connections."
