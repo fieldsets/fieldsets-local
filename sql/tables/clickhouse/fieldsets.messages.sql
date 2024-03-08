@@ -5,8 +5,7 @@
 CREATE TABLE IF NOT EXISTS fieldsets.messages (
     id		    UInt64,
     parent      UInt64,
-    set_id      UInt64,
-    set_parent  UInt64,
+    field_id    UInt64,
     message     Text,
     created     DateTime64(3) DEFAULT now64(3)
 )

@@ -1,12 +1,10 @@
 /**
-* Messages Data Store
-* Uses Clickhouse Log Table Engine. Could also use unlogged PostreSQL data table with no indexes fast write performance.
-*/
+ * Messages Data Store.
+ */
 CREATE FOREIGN TABLE IF NOT EXISTS fieldsets.messages(
     id         	    BIGINT NOT NULL,
     parent     	    BIGINT NULL DEFAULT 0,
-    set_id          BIGINT NULL,
-    set_parent      BIGINT NULL,
+    field_id        BIGINT NULL,
     message         TEXT NULL,
     created         TIMESTAMPTZ NOT NULL DEFAULT NOW()
 )

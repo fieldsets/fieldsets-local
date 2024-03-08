@@ -1,16 +1,16 @@
 /**
  * Lookup Data Store
  * Partitioned on PostgreSQL side for performance.
- * Lookups are one to one key value pairs. Can be used to create key value parings such as Redis or a ClickHouse Dictionary.
+ * Lookups associate a given fieldset id with another.
  */
 CREATE TABLE IF NOT EXISTS fieldsets.lookups(
     id              BIGINT NOT NULL,
-    set_id          BIGINT NOT NULL,
+    parent          BIGINT NOT NULL,
     field_id        BIGINT NOT NULL,
-    fieldset_id     BIGINT NOT NULL,
-    created         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated         TIMESTAMPTZ NOT NULL DEFAULT NOW()
-) PARTITION BY LIST (field_id)
+    lookup_id       BIGINT NOT NULL
+) PARTITION BY LIST (parent)
 TABLESPACE lookups;
+-- partition by parent, field_id
 
 CREATE TABLE IF NOT EXISTS fieldsets.__default_lookups PARTITION OF fieldsets.lookups DEFAULT TABLESPACE lookups;
+
