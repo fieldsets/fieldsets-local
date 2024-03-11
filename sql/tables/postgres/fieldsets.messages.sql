@@ -1,6 +1,7 @@
 /**
  * Messages Data Store.
  */
+ /*
 CREATE FOREIGN TABLE IF NOT EXISTS fieldsets.messages(
     id         	    BIGINT NOT NULL,
     parent     	    BIGINT NULL DEFAULT 0,
@@ -9,3 +10,4 @@ CREATE FOREIGN TABLE IF NOT EXISTS fieldsets.messages(
     created         TIMESTAMPTZ NOT NULL DEFAULT NOW()
 )
 SERVER clickhouse_server;
+*/
