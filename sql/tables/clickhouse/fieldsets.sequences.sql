@@ -9,5 +9,4 @@ CREATE TABLE IF NOT EXISTS fieldsets.sequences (
 )
 ENGINE = MergeTree()
 PARTITION BY position
-ORDER BY (parent, id)
-SETTINGS index_granularity = 8192;
+ORDER BY (parent, id);

@@ -26,7 +26,7 @@ if [[ ! -f "${FDFILE}" ]]; then
             CREATE EXTENSION IF NOT EXISTS clickhouse_fdw;
             CREATE SERVER IF NOT EXISTS clickhouse_server
                 FOREIGN DATA WRAPPER clickhouse_fdw
-                OPTIONS(dbname '${CLICKHOUSE_DB}', host '${CLICKHOUSE_HOST}', port '8123');
+                OPTIONS(dbname '${CLICKHOUSE_DB}', host '${CLICKHOUSE_HOST}', port '${CLICKHOUSE_PORT}');
 
             CREATE USER MAPPING IF NOT EXISTS FOR CURRENT_USER SERVER clickhouse_server OPTIONS (user '${CLICKHOUSE_USER}', password '${CLICKHOUSE_PASSWORD}');
             CREATE USER MAPPING IF NOT EXISTS FOR ${POSTGRES_TRIGGER_ROLE} SERVER clickhouse_server OPTIONS (user '${CLICKHOUSE_USER}', password '${CLICKHOUSE_PASSWORD}');

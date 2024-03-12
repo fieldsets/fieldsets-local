@@ -9,5 +9,4 @@ CREATE TABLE IF NOT EXISTS fieldsets.records (
 )
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(created)
-ORDER BY (parent, id, created)
-SETTINGS index_granularity = 8192;
+ORDER BY (parent, id, created);
