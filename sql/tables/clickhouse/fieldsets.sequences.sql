@@ -9,4 +9,4 @@ CREATE TABLE IF NOT EXISTS fieldsets.sequences (
 )
 ENGINE = MergeTree()
 PARTITION BY position
-ORDER BY (parent, id);
+ORDER BY (parent, id, position);
