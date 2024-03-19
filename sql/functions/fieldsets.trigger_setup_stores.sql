@@ -17,40 +17,83 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
     auth_string TEXT;
     fs_id BIGINT;
     fs RECORD;
+    store_type_list TEXT[];
+    store_type_name TEXT;
   BEGIN
     SELECT fieldsets.get_clickhouse_auth_string() INTO auth_string;
     FOR fieldset_records IN
+      WITH partition_parents AS (
+        SELECT
+          B.id,
+          A.set_id,
+          A.set_token,
+          A.store
+        FROM new_fieldsets A,
+        fieldsets.fieldsets B
+        WHERE A.store <> 'fieldset'
+        AND B.store = 'fieldset'
+        AND A.set_id = B.set_id
+        AND B.token = B.set_token
+        UNION
+        SELECT
+          id,
+          set_id,
+          set_token,
+          store
+        FROM new_fieldsets
+        WHERE store <> 'fieldset'
+      )
       SELECT
         set_id,
         set_token,
         store,
         array_agg(id) AS ids,
         array_to_string(array_agg(id),',') AS partition_ids
-      FROM new_fieldsets
+      FROM partition_parents
       GROUP BY set_id, set_token, store
     LOOP
       /**
+       * FIELDSETS
+       */
+      IF fieldset_records.store = 'fieldset' THEN
+          store_type_list := enum_range(NULL::STORE_TYPE);
+          FOREACH store_type_name IN ARRAY store_type_list
+          LOOP
+              partition_name := format('%s_%s', fieldset_records.set_token, store_type_name);
+              sql_stmt := format('ALTER TABLE IF EXISTS fieldsets.%I DROP CONSTRAINT IF EXISTS %s_parent_chk;', partition_name, partition_name);
+              EXECUTE sql_stmt;
+              sql_stmt := format('ALTER TABLE IF EXISTS fieldsets.%I ADD CONSTRAINT %s_parent_chk CHECK(parent IN (%s));', partition_name, partition_name, fieldset_records.partition_ids);
+              EXECUTE sql_stmt;
+          END LOOP;
+      /**
        * FILTERS
        */
-      IF fieldset_records.store = 'filter' THEN
+      ELSIF fieldset_records.store = 'filter' THEN
         store_tbl_name := 'filters';
         fieldset_partition_tbl_name := format('__fieldsets_%s_%s', fieldset_records.set_token, fieldset_records.store);
         partition_name := format('%s_%s', fieldset_records.set_token, fieldset_records.store);
 
         SELECT to_regclass(format('fieldsets.%I',partition_name)) INTO partition_status;
         IF partition_status IS NULL THEN
-          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I(CHECK(parent IN (%s))) INHERITS (fieldsets.%I) TABLESPACE %s;', partition_name, fieldset_records.partition_ids, store_tbl_name, store_tbl_name);
+          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I(CONSTRAINT %s_parent_chk CHECK(parent IN (%s))) INHERITS (fieldsets.%I) TABLESPACE %s;', partition_name, partition_name, fieldset_records.partition_ids, store_tbl_name, store_tbl_name);
           EXECUTE sql_stmt;
           sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_pkey PRIMARY KEY (id);', partition_name, partition_name);
+          EXECUTE sql_stmt;
+        ELSE
+          sql_stmt := format('ALTER TABLE fieldsets.%I DROP CONSTRAINT %s_parent_chk;', partition_name, partition_name);
+          EXECUTE sql_stmt;
+          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_chk CHECK(parent IN (%s));', partition_name, partition_name, fieldset_records.partition_ids);
           EXECUTE sql_stmt;
         END IF;
 
         FOREACH fs_id IN ARRAY fieldset_records.ids
         LOOP
-          SELECT token, type INTO fs FROM new_fieldsets WHERE id = fs_id;
-          SELECT fieldsets.get_field_data_type(fs.type::TEXT) INTO col_data_type;
-          sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
-          EXECUTE sql_stmt;
+          SELECT token, type INTO fs FROM new_fieldsets WHERE id = fs_id AND type <> 'fieldset'::FIELD_TYPE;
+          IF fs IS NOT NULL THEN
+            SELECT fieldsets.get_field_data_type(fs.type::TEXT) INTO col_data_type;
+            sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
+            EXECUTE sql_stmt;
+          END IF;
         END LOOP;
 
       /**
@@ -74,20 +117,27 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
           ', partition_name);
           sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);
           EXECUTE sql_stmt;
-          sql_stmt := format('CREATE FOREIGN TABLE IF NOT EXISTS fieldsets.%I(CHECK(parent IN (%s))) INHERITS (fieldsets.%I) SERVER clickhouse_server;', partition_name, fieldset_records.partition_ids, store_tbl_name);
+          sql_stmt := format('CREATE FOREIGN TABLE IF NOT EXISTS fieldsets.%I(CONSTRAINT %s_parent_chk CHECK(parent IN (%s))) INHERITS (fieldsets.%I) SERVER clickhouse_server;', partition_name, partition_name, fieldset_records.partition_ids, store_tbl_name);
+          EXECUTE sql_stmt;
+        ELSE
+          sql_stmt := format('ALTER TABLE fieldsets.%I DROP CONSTRAINT %s_parent_chk;', partition_name, partition_name);
+          EXECUTE sql_stmt;
+          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_chk CHECK(parent IN (%s));', partition_name, partition_name, fieldset_records.partition_ids);
           EXECUTE sql_stmt;
         END IF;
 
         FOREACH fs_id IN ARRAY fieldset_records.ids
         LOOP
-          SELECT token, type INTO fs FROM new_fieldsets WHERE id = fs_id;
-          SELECT fieldsets.get_field_data_type(fs.type::TEXT,'clickhouse') INTO col_data_type;
-          clickhouse_sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
-          sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);
-          EXECUTE sql_stmt;
-          SELECT fieldsets.get_field_data_type(fs.type::TEXT) INTO col_data_type;
-          sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
-          EXECUTE sql_stmt;
+          SELECT token, type INTO fs FROM new_fieldsets WHERE id = fs_id AND type <> 'fieldset'::FIELD_TYPE;
+          IF fs IS NOT NULL THEN
+            SELECT fieldsets.get_field_data_type(fs.type::TEXT,'clickhouse') INTO col_data_type;
+            clickhouse_sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
+            sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);
+            EXECUTE sql_stmt;
+            SELECT fieldsets.get_field_data_type(fs.type::TEXT) INTO col_data_type;
+            sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
+            EXECUTE sql_stmt;
+          END IF;
         END LOOP;
 
       /**
@@ -113,20 +163,27 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
           ', partition_name);
           sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);
           EXECUTE sql_stmt;
-          sql_stmt := format('CREATE FOREIGN TABLE IF NOT EXISTS fieldsets.%I(CHECK(parent IN (%s))) INHERITS (fieldsets.%I) SERVER clickhouse_server;', partition_name, fieldset_records.partition_ids, store_tbl_name);
+          sql_stmt := format('CREATE FOREIGN TABLE IF NOT EXISTS fieldsets.%I(CONSTRAINT %s_parent_chk CHECK(parent IN (%s))) INHERITS (fieldsets.%I) SERVER clickhouse_server;', partition_name, partition_name, fieldset_records.partition_ids, store_tbl_name);
+          EXECUTE sql_stmt;
+        ELSE
+          sql_stmt := format('ALTER TABLE fieldsets.%I DROP CONSTRAINT %s_parent_chk;', partition_name, partition_name);
+          EXECUTE sql_stmt;
+          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_chk CHECK(parent IN (%s));', partition_name, partition_name, fieldset_records.partition_ids);
           EXECUTE sql_stmt;
         END IF;
 
         FOREACH fs_id IN ARRAY fieldset_records.ids
         LOOP
-          SELECT token, type INTO fs FROM new_fieldsets WHERE id = fs_id;
-          SELECT fieldsets.get_field_data_type(fs.type::TEXT,'clickhouse') INTO col_data_type;
-          clickhouse_sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
-          sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);
-          EXECUTE sql_stmt;
-          SELECT fieldsets.get_field_data_type(fs.type::TEXT) INTO col_data_type;
-          sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
-          EXECUTE sql_stmt;
+          SELECT token, type INTO fs FROM new_fieldsets WHERE id = fs_id AND type <> 'fieldset'::FIELD_TYPE;
+          IF fs IS NOT NULL THEN
+            SELECT fieldsets.get_field_data_type(fs.type::TEXT,'clickhouse') INTO col_data_type;
+            clickhouse_sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
+            sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);
+            EXECUTE sql_stmt;
+            SELECT fieldsets.get_field_data_type(fs.type::TEXT) INTO col_data_type;
+            sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
+            EXECUTE sql_stmt;
+          END IF;
         END LOOP;
 
       /**
@@ -138,9 +195,14 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
         partition_name := format('%s_%s', fieldset_records.set_token, fieldset_records.store);
         SELECT to_regclass(format('fieldsets.%I',partition_name)) INTO partition_status;
         IF partition_status IS NULL THEN
-          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I(CHECK(parent IN (%s))) INHERITS (fieldsets.%I) TABLESPACE filters;', partition_name, fieldset_records.partition_ids, store_tbl_name);
+          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I(CONSTRAINT %s_parent_chk CHECK(parent IN (%s))) INHERITS (fieldsets.%I) TABLESPACE filters;', partition_name, partition_name, fieldset_records.partition_ids, store_tbl_name);
           EXECUTE sql_stmt;
           sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_pkey PRIMARY KEY (id);', partition_name, partition_name);
+          EXECUTE sql_stmt;
+        ELSE
+          sql_stmt := format('ALTER TABLE fieldsets.%I DROP CONSTRAINT %s_parent_chk;', partition_name, partition_name);
+          EXECUTE sql_stmt;
+          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_chk CHECK(parent IN (%s));', partition_name, partition_name, fieldset_records.partition_ids);
           EXECUTE sql_stmt;
         END IF;
 
@@ -153,20 +215,27 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
         partition_name := format('%s_%s', fieldset_records.set_token, fieldset_records.store);
         SELECT to_regclass(format('fieldsets.%I',partition_name)) INTO partition_status;
         IF partition_status IS NULL THEN
-          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I(CHECK(parent IN (%s))) INHERITS (fieldsets.%I) TABLESPACE filters;', partition_name, fieldset_records.partition_ids, store_tbl_name);
+          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I(CONSTRAINT %s_parent_chk CHECK(parent IN (%s))) INHERITS (fieldsets.%I) TABLESPACE filters;', partition_name, partition_name, fieldset_records.partition_ids, store_tbl_name);
           EXECUTE sql_stmt;
           sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_pkey PRIMARY KEY (id);', partition_name, partition_name);
+          EXECUTE sql_stmt;
+        ELSE
+          sql_stmt := format('ALTER TABLE fieldsets.%I DROP CONSTRAINT %s_parent_chk;', partition_name, partition_name);
+          EXECUTE sql_stmt;
+          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_chk CHECK(parent IN (%s));', partition_name, partition_name, fieldset_records.partition_ids);
           EXECUTE sql_stmt;
         END IF;
 
         FOREACH fs_id IN ARRAY fieldset_records.ids
         LOOP
-          SELECT token, type INTO fs FROM new_fieldsets WHERE id = fs_id;
-          SELECT fieldsets.get_field_data_type(fs.type::TEXT) INTO col_data_type;
-          sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
-          EXECUTE sql_stmt;
-          sql_stmt := format('CREATE INDEX %s_%s_idx ON fieldsets.%I USING btree (%s);', partition_name, fs.token, partition_name, fs.token);
-          EXECUTE sql_stmt;
+          SELECT token, type INTO fs FROM new_fieldsets WHERE id = fs_id AND type <> 'fieldset'::FIELD_TYPE;
+          IF fs IS NOT NULL THEN
+            SELECT fieldsets.get_field_data_type(fs.type::TEXT) INTO col_data_type;
+            sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
+            EXECUTE sql_stmt;
+            sql_stmt := format('CREATE INDEX IF NOT EXISTS %s_%s_idx ON fieldsets.%I USING btree (%s);', partition_name, fs.token, partition_name, fs.token);
+            EXECUTE sql_stmt;
+          END IF;
         END LOOP;
 
       /**
