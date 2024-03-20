@@ -24,51 +24,58 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
     FOR fieldset_records IN
       WITH partition_parents AS (
         SELECT
-          B.id,
+          B.parent,
           A.set_id,
           A.set_token,
           A.store
-        FROM new_fieldsets A,
+        FROM fieldsets.fieldsets A,
+        new_fieldsets B
+        WHERE A.store <> 'fieldset'
+        AND B.store = 'fieldset'
+        AND A.set_id = B.set_id
+        UNION
+        SELECT
+          B.parent,
+          A.set_id,
+          A.set_token,
+          A.store
+        FROM fieldsets.fieldsets A,
         fieldsets.fieldsets B
         WHERE A.store <> 'fieldset'
         AND B.store = 'fieldset'
         AND A.set_id = B.set_id
-        AND B.token = B.set_token
         UNION
         SELECT
-          id,
+          parent,
           set_id,
           set_token,
           store
         FROM new_fieldsets
         WHERE store <> 'fieldset'
+        UNION
+        SELECT
+          parent,
+          set_id,
+          set_token,
+          store
+        FROM fieldsets.fieldsets
+        WHERE store <> 'fieldset'
       )
       SELECT
-        set_id,
-        set_token,
-        store,
-        array_agg(id) AS ids,
-        array_to_string(array_agg(id),',') AS partition_ids
-      FROM partition_parents
-      GROUP BY set_id, set_token, store
+        A.set_id,
+        A.set_token,
+        B.store,
+        array_agg(DISTINCT B.parent) AS ids,
+        array_to_string(array_agg(DISTINCT B.parent),',') AS partition_ids
+      FROM  new_fieldsets A,
+        partition_parents B
+      WHERE A.set_id = B.set_id
+      GROUP BY A.set_id, A.set_token, B.store
     LOOP
-      /**
-       * FIELDSETS
-       */
-      IF fieldset_records.store = 'fieldset' THEN
-          store_type_list := enum_range(NULL::STORE_TYPE);
-          FOREACH store_type_name IN ARRAY store_type_list
-          LOOP
-              partition_name := format('%s_%s', fieldset_records.set_token, store_type_name);
-              sql_stmt := format('ALTER TABLE IF EXISTS fieldsets.%I DROP CONSTRAINT IF EXISTS %s_parent_chk;', partition_name, partition_name);
-              EXECUTE sql_stmt;
-              sql_stmt := format('ALTER TABLE IF EXISTS fieldsets.%I ADD CONSTRAINT %s_parent_chk CHECK(parent IN (%s));', partition_name, partition_name, fieldset_records.partition_ids);
-              EXECUTE sql_stmt;
-          END LOOP;
       /**
        * FILTERS
        */
-      ELSIF fieldset_records.store = 'filter' THEN
+      IF fieldset_records.store = 'filter' THEN
         store_tbl_name := 'filters';
         fieldset_partition_tbl_name := format('__fieldsets_%s_%s', fieldset_records.set_token, fieldset_records.store);
         partition_name := format('%s_%s', fieldset_records.set_token, fieldset_records.store);
@@ -80,7 +87,7 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
           sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_pkey PRIMARY KEY (id);', partition_name, partition_name);
           EXECUTE sql_stmt;
         ELSE
-          sql_stmt := format('ALTER TABLE fieldsets.%I DROP CONSTRAINT %s_parent_chk;', partition_name, partition_name);
+          sql_stmt := format('ALTER TABLE fieldsets.%I DROP CONSTRAINT IF EXISTS %s_parent_chk;', partition_name, partition_name);
           EXECUTE sql_stmt;
           sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_chk CHECK(parent IN (%s));', partition_name, partition_name, fieldset_records.partition_ids);
           EXECUTE sql_stmt;

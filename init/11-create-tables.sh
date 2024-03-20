@@ -25,21 +25,7 @@ source /fieldsets-lib/bash/utils.sh
 init() {
     log "Creating tables...."
     local f
-    if [[ "${ENABLE_STORE:-false}" == "true" ]]; then
-        for f in /fieldsets-sql/tables/${FIELDSETS_STORE:-clickhouse}/*.sql; do
-            log "Executing: ${f}"
-            case ${FIELDSETS_STORE:-clickhouse} in
-                clickhouse)
-                    clickhouse-client --host ${CLICKHOUSE_HOST} --user ${CLICKHOUSE_USER} --password ${CLICKHOUSE_PASSWORD} --database ${CLICKHOUSE_DB} -nm --queries-file ${f}
-                    ;;
-                *)
-                    clickhouse-client --host ${CLICKHOUSE_HOST} --user ${CLICKHOUSE_USER} --password ${CLICKHOUSE_PASSWORD} --database ${CLICKHOUSE_DB} -nm --queries-file ${f}
-                    ;;
-            esac
-        done
-    fi
-
-    for f in /fieldsets-sql/tables/${FIELDSETS_DB:-postgres}/*.sql; do
+    for f in /fieldsets-sql/tables/*.sql; do
         log "Executing: ${f}"
         case ${FIELDSETS_DB:-postgres} in
             postgres)

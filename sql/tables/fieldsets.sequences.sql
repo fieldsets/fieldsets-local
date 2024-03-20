@@ -1,5 +1,5 @@
 /**
- * Position Data Store
+ * Position based Data Store
  * Should use tradional Columnar table.
  */
 
