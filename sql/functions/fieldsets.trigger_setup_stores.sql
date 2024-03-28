@@ -86,6 +86,10 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
           EXECUTE sql_stmt;
           sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_pkey PRIMARY KEY (id);', partition_name, partition_name);
           EXECUTE sql_stmt;
+          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_fkey FOREIGN KEY (id) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name);
+          EXECUTE sql_stmt;
+          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_fkey FOREIGN KEY (parent) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name);
+          EXECUTE sql_stmt;
         ELSE
           sql_stmt := format('ALTER TABLE fieldsets.%I DROP CONSTRAINT IF EXISTS %s_parent_chk;', partition_name, partition_name);
           EXECUTE sql_stmt;
@@ -152,7 +156,6 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
        */
       ELSIF fieldset_records.store = 'sequence' THEN
         store_tbl_name := 'sequences';
-        fieldset_partition_tbl_name := format('__fieldsets_%s_%s', fieldset_records.set_token, fieldset_records.store);
         partition_name := format('%s_%s', fieldset_records.set_token, fieldset_records.store);
         fieldset_partition_tbl_name := format('__fieldsets_%s_%s', fieldset_records.set_token, fieldset_records.store);
         partition_name := format('%s_%s', fieldset_records.set_token, fieldset_records.store);
@@ -206,6 +209,10 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
           EXECUTE sql_stmt;
           sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_pkey PRIMARY KEY (id);', partition_name, partition_name);
           EXECUTE sql_stmt;
+          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_fkey FOREIGN KEY (id) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name);
+          EXECUTE sql_stmt;
+          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_fkey FOREIGN KEY (parent) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name);
+          EXECUTE sql_stmt;
         ELSE
           sql_stmt := format('ALTER TABLE fieldsets.%I DROP CONSTRAINT %s_parent_chk;', partition_name, partition_name);
           EXECUTE sql_stmt;
@@ -225,6 +232,10 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
           sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I(CONSTRAINT %s_parent_chk CHECK(parent IN (%s))) INHERITS (fieldsets.%I) TABLESPACE filters;', partition_name, partition_name, fieldset_records.partition_ids, store_tbl_name);
           EXECUTE sql_stmt;
           sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_pkey PRIMARY KEY (id);', partition_name, partition_name);
+          EXECUTE sql_stmt;
+          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_fkey FOREIGN KEY (id) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name);
+          EXECUTE sql_stmt;
+          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_fkey FOREIGN KEY (parent) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name);
           EXECUTE sql_stmt;
         ELSE
           sql_stmt := format('ALTER TABLE fieldsets.%I DROP CONSTRAINT %s_parent_chk;', partition_name, partition_name);
