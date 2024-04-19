@@ -24,7 +24,7 @@ source /fieldsets-lib/bash/utils.sh
 # init: execute our sql
 ##
 init() {
-    log "Creating procedures...."    
+    log "Creating procedures...."
     local f
     for f in /fieldsets-sql/stored_procedures/*.sql; do
         log "Executing: ${f}"

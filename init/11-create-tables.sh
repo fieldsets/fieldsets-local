@@ -23,16 +23,18 @@ source /fieldsets-lib/bash/utils.sh
 # init: execute our sql
 ##
 init() {
-    log "Creating tables...."    
+    log "Creating tables...."
     local f
-	for f in /fieldsets-sql/tables/clickhouse/*.sql; do
+    for f in /fieldsets-sql/tables/*.sql; do
         log "Executing: ${f}"
-        clickhouse-client --host ${CLICKHOUSE_HOST} --user ${CLICKHOUSE_USER} --password ${CLICKHOUSE_PASSWORD} --database ${CLICKHOUSE_DB} -nm --queries-file ${f}
-    done
-
-    for f in /fieldsets-sql/tables/postgres/*.sql; do
-        log "Executing: ${f}"
-        psql -v ON_ERROR_STOP=1 --host "${POSTGRES_HOST}" --port "${POSTGRES_PORT}" --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" -f "${f}"
+        case ${FIELDSETS_DB:-postgres} in
+            postgres)
+                psql -v ON_ERROR_STOP=1 --host "${POSTGRES_HOST}" --port "${POSTGRES_PORT}" --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" -f "${f}"
+                ;;
+            *)
+                psql -v ON_ERROR_STOP=1 --host "${POSTGRES_HOST}" --port "${POSTGRES_PORT}" --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" -f "${f}"
+                ;;
+        esac
     done
 
     log "Tables created."

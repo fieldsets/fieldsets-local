@@ -23,7 +23,8 @@ source /fieldsets-lib/bash/utils.sh
 # init: execute our sql
 ##
 init() {
-    log "Installing libraries...."
+    log "Installing libraries & modules...."
+    pwsh -Command "& {Install-Module -Name ImportExcel -Force -AllowClobber}"
     log "Libraries installed."
 }
 
