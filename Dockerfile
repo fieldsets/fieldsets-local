@@ -48,6 +48,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         zip \
         nasm \
         yasm \
+        libgdiplus \
+        libc6-dev \
         libisal2 \
         libisal-dev \
         libdeflate0 \

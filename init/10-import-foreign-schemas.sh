@@ -21,7 +21,10 @@ if [[ ! -f "${FDFILE}" ]]; then
     # Always allow external sources to be added after initialization as these should be read only.
     echo "Importing remote postgres data schemas......"
 
+    # Wait for or data store
     if [[ "${ENABLE_STORE:-false}" == "true" ]]; then
+        timeout 90s bash -c "until curl --silent --output /dev/null http://${CLICKHOUSE_HOST}:${CLICKHOUSE_PORT}/ping; do printf '.'; sleep 5; done; printf '\n'"
+
         psql -v ON_ERROR_STOP=1 --host "$POSTGRES_HOST" --port "$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
             CREATE EXTENSION IF NOT EXISTS clickhouse_fdw;
             CREATE SERVER IF NOT EXISTS clickhouse_server
