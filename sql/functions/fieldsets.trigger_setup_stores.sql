@@ -119,7 +119,7 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
             SELECT fieldsets.get_field_data_type(fs.type::TEXT) INTO col_data_type;
             sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
             EXECUTE sql_stmt;
-            IF fs.type = 'fieldset'::TEXT THEN
+            IF fs.type::TEXT = 'fieldset'::TEXT THEN
               sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_%s_fkey FOREIGN KEY (%s) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name, fs.token, fs.token);
               EXECUTE sql_stmt;
             END IF;
@@ -320,7 +320,7 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
             EXECUTE sql_stmt;
             sql_stmt := format('CREATE INDEX IF NOT EXISTS %s_%s_idx ON fieldsets.%I USING btree (%s);', partition_name, fs.token, partition_name, fs.token);
             EXECUTE sql_stmt;
-            IF fs.type = 'fieldset'::TEXT THEN
+            IF fs.type::TEXT = 'fieldset'::TEXT THEN
               sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_%s_fkey FOREIGN KEY (%s) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name, fs.token, fs.token);
               EXECUTE sql_stmt;
             END IF;
