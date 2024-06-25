@@ -18,6 +18,8 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
     partition_status RECORD;
     parent_partition_status RECORD;
     auth_string TEXT;
+    cron_job_token TEXT;
+    cron_job_sql TEXT;
     fs_id BIGINT;
     fs RECORD;
     store_type_list TEXT[];
@@ -73,6 +75,7 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
       FROM  new_fieldsets A,
         partition_parents B
       WHERE A.set_id = B.set_id
+      AND B.parent <> 1
       GROUP BY A.set_id, A.set_token, B.store
     LOOP
       /**
@@ -292,25 +295,29 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
           END IF;
         END IF;
 
-        fieldset_partition_tbl_name := format('__fieldsets_%s_%s', fieldset_records.set_token, fieldset_records.store);
         partition_name := format('%s_%s', fieldset_records.set_token, fieldset_records.store);
         SELECT to_regclass(format('fieldsets.%I',partition_name)) INTO partition_status;
         IF partition_status IS NULL THEN
-          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I(CONSTRAINT %s_parent_chk CHECK(parent IN (%s)) NO INHERIT) INHERITS (fieldsets.%I) TABLESPACE %s;', partition_name, partition_name, fieldset_records.partition_ids, parent_partition_name, store_tbl_name);
-          EXECUTE sql_stmt;
-          sql_stmt := format('CREATE INDEX IF NOT EXISTS %s_idx ON fieldsets.%I USING btree (id,parent);', partition_name, partition_name);
+          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) PARTITION BY LIST(type) TABLESPACE %s;', partition_name, parent_partition_name, fieldset_records.partition_ids, store_tbl_name);
           EXECUTE sql_stmt;
           sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_fkey FOREIGN KEY (id) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name);
           EXECUTE sql_stmt;
           sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_fkey FOREIGN KEY (parent) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name);
           EXECUTE sql_stmt;
+          -- Asynchronously create sub-partitions.
+          cron_job_token := format('create_lookup_field_partitions_%s', partition_name);
+          cron_job_sql := format('CALL fieldsets.create_fields_partitions(%L,%L,0);',partition_name, store_tbl_name);
+          EXECUTE format('CALL cron.async(%L, %L, %L);', cron_job_token, '* * * * *', cron_job_sql);
         ELSE
-          sql_stmt := format('ALTER TABLE fieldsets.%I DROP CONSTRAINT %s_parent_chk;', partition_name, partition_name);
+          sql_stmt := format('ALTER TABLE fieldsets.%I DETACH PARTITION fieldsets.%I;', parent_partition_name, partition_name);
           EXECUTE sql_stmt;
-          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_chk CHECK(parent IN (%s)) NO INHERIT;', partition_name, partition_name, fieldset_records.partition_ids);
+          sql_stmt := format('ALTER TABLE fieldsets.%I ATTACH PARTITION fieldsets.%I FOR VALUES IN (%s);', parent_partition_name, partition_name, fieldset_records.partition_ids);
           EXECUTE sql_stmt;
         END IF;
-
+        /*
+         * Create a dictionary for the lookup
+         */
+        /*
         FOREACH fs_id IN ARRAY fieldset_records.ids
         LOOP
           SELECT token, type INTO fs FROM new_fieldsets WHERE id = fs_id;
@@ -326,7 +333,7 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
             END IF;
           END IF;
         END LOOP;
-
+        */
       /**
        * STREAMS
        */

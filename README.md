@@ -101,7 +101,7 @@ Remove all data volumes when shutting down. This will prompt a rebuild on all co
 If you'd like to utilize a terminal within the container, make sure the environment variable `ENABLE_TERMINAL=true` is set. You can then run the command: `docker exec -it fieldsets-local /bin/bash`
 
 ## Deploying With Fieldsets Local
-Fieldsets local handles setting up tunnels if outside of AWS as well as creating foreign data servers in any environment. This is all handled within the [entrypoint script](./entrypoint.sh). It will set a series of checkpoints on it's data volume found at `/data/checkpoints/$ENVIRONMENT/fieldsets-local`. After the entrypoint script it will execute the command `/bin/bash` which will only create a pseudo tty terminal if you sepcify `ENABLE_TERMINAL=true` within your dotenv file. You can use this container and override this command with your own custom command within a `docker-compose.override.yml` file. An example would look like so.
+Fieldsets local handles setting up tunnels if outside of AWS as well as creating foreign data servers in any environment. This is all handled within the [entrypoint script](./entrypoint.sh). It will set a series of checkpoints on it's data volume found at `/checkpoints/$ENVIRONMENT/fieldsets-local`. After the entrypoint script it will execute the command `/bin/bash` which will only create a pseudo tty terminal if you sepcify `ENABLE_TERMINAL=true` within your dotenv file. You can use this container and override this command with your own custom command within a `docker-compose.override.yml` file. An example would look like so.
 ```
 version: '3.7'
 services:

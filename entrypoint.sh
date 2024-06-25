@@ -17,7 +17,7 @@ set -eEa -o pipefail
 #===
 
 export PGPASSWORD=${POSTGRES_PASSWORD}
-export DATA_PATH=/data/checkpoints/${ENVIRONMENT}/fieldsets-local/
+export DATA_PATH=/checkpoints/${ENVIRONMENT}/fieldsets-local/
 export PRIORITY=0
 
 #===

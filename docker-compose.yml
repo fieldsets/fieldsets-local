@@ -45,7 +45,7 @@ services:
             POSTGRES_TRIGGER_ROLE: ${POSTGRES_TRIGGER_ROLE:-fieldsets_trigger_role}
             POSTGRES_TRIGGER_ROLE_PASSWORD: ${POSTGRES_TRIGGER_ROLE_PASSWORD:-}
             FIELDSETS_LOCAL_HOST: ${FIELDSETS_LOCAL_HOST:-172.28.0.6}
-            CHECKPOINT_PATH: ${CHECKPOINT_PATH:-/data/checkpoints/}
+            CHECKPOINT_PATH: ${CHECKPOINT_PATH:-/checkpoints/}
             ENABLE_DEBUG_MODE: ${ENABLE_DEBUG_MODE:-true}
             ENABLE_LOGGING: ${ENABLE_LOGGING:-false} # Write logs to DB
         volumes:
@@ -57,10 +57,10 @@ services:
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}sql/:/fieldsets-sql/
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}entrypoint.sh:/docker-entrypoint.sh
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}bin:/fieldsets-bin/
-            - ${FIELDSETS_PATH:-./}lib:/fieldsets-lib/
-            - ${FIELDSETS_PATH:-./}plugins:/fieldsets-plugins/
-            - ${FIELDSETS_PATH:-./}data:/fieldsets-data/
-            - ${FIELDSETS_PATH:-./}src:/fieldsets/
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}lib:/fieldsets-lib/
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}plugins:/fieldsets-plugins/
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}data:/fieldsets-data/
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}src:/fieldsets/
             - local-data:/data
 
 volumes:

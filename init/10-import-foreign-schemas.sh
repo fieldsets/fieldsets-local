@@ -8,7 +8,7 @@ set -e
 
 export PRIORITY=10
 export PGPASSWORD=${POSTGRES_PASSWORD}
-FDFILE="/data/checkpoints/${PRIORITY}-pg-foreign-data-import.complete"
+FDFILE="/checkpoints/${ENVIRONMENT}/fieldsets-local/${PRIORITY}-pg-foreign-data-import.complete"
 
 if [[ ! -f "${FDFILE}" ]]; then
     # Postgres
