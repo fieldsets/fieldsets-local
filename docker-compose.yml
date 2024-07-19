@@ -20,10 +20,10 @@ services:
             FIELDSETS_STORE: ${FIELDSETS_STORE:-clickhouse}
             LOGGER_HOST: ${LOGGER_HOST:-172.28.0.2}
             LOGGER_PORT: ${LOGGER_PORT:-24224}
-            PLUGINS_PATH: "/fieldsets-plugins/"
-            LIB_PATH: "/fieldsets-lib/"
-            APPS_PATH: "/fieldsets/"
-            DATA_PATH: "/fieldsets-data/"
+            PLUGINS_PATH: "/usr/local/fieldsets/plugins/"
+            LIB_PATH: "/usr/local/fieldsets/lib/"
+            APPS_PATH: "/usr/local/fieldsets/apps/"
+            DATA_PATH: "/usr/local/fieldsets/data/"
             FIELDSETS_LOCAL_VERSION: ${FIELDSETS_LOCAL_VERSION:-latest}
             PUID: ${LOCAL_UID:-1000}
             PGID: ${LOCAL_GID:-1000}
@@ -54,13 +54,13 @@ services:
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}.bash_profile:/root/.profile
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}init/:/docker-entrypoint-init.d/
             - ${SSH_KEY_PATH:-~/.ssh/}:/root/.ssh/
-            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}sql/:/fieldsets-sql/
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}sql/:/usr/local/fieldsets/sql/
             - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}entrypoint.sh:/docker-entrypoint.sh
-            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}bin:/fieldsets-bin/
-            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}lib:/fieldsets-lib/
-            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}plugins:/fieldsets-plugins/
-            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}data:/fieldsets-data/
-            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}src:/fieldsets/
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}bin:/usr/local/fieldsets/bin/
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}lib:/usr/local/fieldsets/lib/
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}plugins:/usr/local/fieldsets/plugins/
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}data:/usr/local/fieldsets/data/
+            - ${FIELDSETS_LOCAL_CONFIG_PATH:-./}src:/usr/local/fieldsets/apps/
             - local-data:/data
 
 volumes:

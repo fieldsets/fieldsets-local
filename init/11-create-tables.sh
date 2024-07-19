@@ -17,7 +17,7 @@ export PGPASSWORD=${POSTGRES_PASSWORD}
 #===
 # Functions
 #===
-source /fieldsets-lib/bash/utils.sh
+source /usr/local/fieldsets/lib/bash/utils.sh
 
 ##
 # init: execute our sql
@@ -25,7 +25,7 @@ source /fieldsets-lib/bash/utils.sh
 init() {
     log "Creating tables...."
     local f
-    for f in /fieldsets-sql/tables/*.sql; do
+    for f in /usr/local/fieldsets/sql/tables/*.sql; do
         log "Executing: ${f}"
         case ${FIELDSETS_DB:-postgres} in
             postgres)

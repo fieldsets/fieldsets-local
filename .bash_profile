@@ -10,6 +10,6 @@ mesg n 2> /dev/null || true
 
 # User specific environment and startup programs
 
-PATH=$PATH:$HOME/.local/bin:$HOME/bin:/fieldsets-bin
+PATH=$PATH:$HOME/.local/bin:$HOME/bin:/usr/local/fieldsets/bin/
 
 export PATH

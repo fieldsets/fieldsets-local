@@ -87,7 +87,7 @@ When you are done using the environment you can halt the environment using the c
 ## Additional Steps
 Once the containers are running you can clone any missing repositories to the `./src/` directory and run any application docker containers on the `default` network to get connectivity with localized container services.
 
-Any repositories cloned into `./src/` are ignored by git and will be available within the container from the `/fieldsets/` root level directory.
+Any repositories cloned into `./src/` are ignored by git and will be available within the container from the `/usr/local/fieldsets/apps/` root level directory.
 
 If you utilizing this repository as a boiler plate ad are making changes to the container itself, you may want to utilize the following docker-compose commands:
 
@@ -107,7 +107,7 @@ version: '3.7'
 services:
     fieldsets-local:
         tty: false
-        command: /bin/bash -c "/fieldsets/my_repo/init.sh;"
+        command: /bin/bash -c "/usr/local/fieldsets/apps/my_repo/init.sh;"
 ```
 This would execute your init script you have clone into ./src and exit the container after it completes successfully.
 

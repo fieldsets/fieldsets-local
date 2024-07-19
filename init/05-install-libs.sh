@@ -17,7 +17,7 @@ export PRIORITY=5
 # Functions
 #===
 
-source /fieldsets-lib/bash/utils.sh
+source /usr/local/fieldsets/lib/bash/utils.sh
 
 ##
 # init: execute our sql

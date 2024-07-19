@@ -4,11 +4,11 @@ Param(
     [Parameter(Mandatory=$false,Position=1)][String]$phase = "config"
 )
 $script_token = "$($phase)-phase"
-$utils_module_path = [System.IO.Path]::GetFullPath("/fieldsets-lib/pwsh/")
+$utils_module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/pwsh/")
 Import-Module -Function isPluginPhaseContainer -Name "$($utils_module_path)/plugins.psm1"
 
-Set-Location -Path "/fieldsets-plugins/" | Out-Null
-$plugin_dirs = Get-ChildItem -Path "/fieldsets-plugins/*" -Directory | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
+Set-Location -Path "/usr/local/fieldsets/plugins/" | Out-Null
+$plugin_dirs = Get-ChildItem -Path "/usr/local/fieldsets/plugins/*" -Directory | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
 # Only run config phase for plugin if on correct container.
 foreach ($plugin in $plugin_dirs) {
     if (isPluginPhaseContainer -plugin "$($plugin.BaseName)") {
@@ -23,6 +23,6 @@ foreach ($plugin in $plugin_dirs) {
 }
 [Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token, "User")
 [Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority, "User")
-Set-Location -Path "/fieldsets/" | Out-Null
+Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
 Exit
 Exit-PSHostProcess

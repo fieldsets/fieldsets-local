@@ -23,7 +23,7 @@ last_checkpoint="/docker-entrypoint-init.d/30-create-triggers.sh"
 # Functions
 #===
 
-source /fieldsets-lib/bash/utils.sh
+source /usr/local/fieldsets/lib/bash/utils.sh
 
 ##
 # init: execute our sql
@@ -31,7 +31,7 @@ source /fieldsets-lib/bash/utils.sh
 init() {
     log "Creating triggers...."    
     local f
-    for f in /fieldsets-sql/triggers/*.sql; do
+    for f in /usr/local/fieldsets/sql/triggers/*.sql; do
         log "Executing: ${f}"
         psql -v ON_ERROR_STOP=0 --host "${POSTGRES_HOST}" --port "${POSTGRES_PORT}" --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" -f "${f}"
     done

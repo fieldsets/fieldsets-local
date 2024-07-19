@@ -6,7 +6,7 @@ Param(
 [Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $null, "User")
 [Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $null, "User")
 
-$utils_module_path = [System.IO.Path]::GetFullPath("/fieldsets-lib/pwsh/")
+$utils_module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/pwsh/")
 Import-Module -Function lockfileExists, createLockfile -Name "$($utils_module_path)/utils.psm1"
 Import-Module -Function checkDependencies, isPluginPhaseContainer -Name "$($utils_module_path)/plugins.psm1"
 
@@ -21,8 +21,8 @@ if (!(Test-Path -Path "$($lockfile_path)/$($phase)/")) {
 }
 $dependencies_met = checkDependencies
 if ($dependencies_met) {
-    Set-Location -Path "/fieldsets-plugins/" | Out-Null
-    $plugin_dirs = Get-ChildItem -Path "/fieldsets-plugins/*" -Directory | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
+    Set-Location -Path "/usr/local/fieldsets/plugins/" | Out-Null
+    $plugin_dirs = Get-ChildItem -Path "/usr/local/fieldsets/plugins/*" -Directory | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
     # Check to make sure all plugin dependencies are met.
     foreach ($plugin in $plugin_dirs) {
         Write-Host "Checking Plugin: $($plugin.BaseName)"
@@ -47,6 +47,6 @@ if ($dependencies_met) {
         Throw "Missing Dependencies"
     }
 }
-Set-Location -Path "/fieldsets/" | Out-Null
+Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
 Exit
 Exit-PSHostProcess
