@@ -10,9 +10,14 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
     store_col_name TEXT;
     fieldset_partition_tbl_name TEXT;
     fieldset_parent_token TEXT;
+    fieldset_parent_id BIGINT;
     partition_name TEXT;
+    lookup_partition_name TEXT;
+    partition_ids BIGINT[];
+    partition_ids_string TEXT;
     parent_partition_name TEXT;
     fieldset_records RECORD;
+    fieldset_parent_record RECORD;
     field_type_record RECORD;
     col_data_type TEXT;
     partition_status RECORD;
@@ -29,7 +34,7 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
     FOR fieldset_records IN
       WITH partition_parents AS (
         SELECT
-          B.parent,
+          A.parent,
           A.set_id,
           A.set_token,
           A.store
@@ -40,7 +45,7 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
         AND A.set_id = B.set_id
         UNION
         SELECT
-          B.parent,
+          A.parent,
           A.set_id,
           A.set_token,
           A.store
@@ -284,7 +289,17 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
       ELSIF fieldset_records.store = 'lookup' THEN
         store_tbl_name := 'lookups';
 
-        SELECT parent_token INTO fieldset_parent_token FROM fieldsets.fieldsets WHERE token = fieldset_records.set_token;
+        SELECT id,token,parent,parent_token,set_id,set_token,field_id,field_token,type,store INTO fieldset_parent_record
+        FROM fieldsets.fieldsets
+        WHERE token = fieldset_records.set_token;
+
+        fieldset_parent_token := fieldset_parent_record.parent_token;
+        fieldset_parent_id := fieldset_parent_record.parent;
+        partition_ids := fieldset_records.ids;
+        --IF fieldset_parent_record.parent <> fieldset_parent_record.id THEN
+        --  partition_ids := array_remove(partition_ids,fieldset_parent_id);
+        --END IF;
+
         IF fieldset_parent_token = 'fieldset' OR fieldset_parent_token IS NULL THEN
           parent_partition_name := store_tbl_name;
         ELSE
@@ -295,45 +310,104 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
           END IF;
         END IF;
 
+        partition_ids_string := array_to_string(partition_ids,',');
         partition_name := format('%s_%s', fieldset_records.set_token, fieldset_records.store);
+
         SELECT to_regclass(format('fieldsets.%I',partition_name)) INTO partition_status;
         IF partition_status IS NULL THEN
-          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) PARTITION BY LIST(type) TABLESPACE %s;', partition_name, parent_partition_name, fieldset_records.partition_ids, store_tbl_name);
+          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) PARTITION BY LIST(field_id) TABLESPACE %s;', partition_name, parent_partition_name, partition_ids_string, store_tbl_name);
           EXECUTE sql_stmt;
-          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_fkey FOREIGN KEY (id) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name);
+
+          sql_stmt := format('CREATE INDEX IF NOT EXISTS %s_type_idx ON fieldsets.%I USING btree (type);', partition_name, partition_name);
           EXECUTE sql_stmt;
-          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_fkey FOREIGN KEY (parent) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name);
-          EXECUTE sql_stmt;
-          -- Asynchronously create sub-partitions.
-          cron_job_token := format('create_lookup_field_partitions_%s', partition_name);
-          cron_job_sql := format('CALL fieldsets.create_fields_partitions(%L,%L,0);',partition_name, store_tbl_name);
-          EXECUTE format('CALL cron.async(%L, %L, %L);', cron_job_token, '* * * * *', cron_job_sql);
         ELSE
           sql_stmt := format('ALTER TABLE fieldsets.%I DETACH PARTITION fieldsets.%I;', parent_partition_name, partition_name);
           EXECUTE sql_stmt;
-          sql_stmt := format('ALTER TABLE fieldsets.%I ATTACH PARTITION fieldsets.%I FOR VALUES IN (%s);', parent_partition_name, partition_name, fieldset_records.partition_ids);
+          sql_stmt := format('ALTER TABLE fieldsets.%I ATTACH PARTITION fieldsets.%I FOR VALUES IN (%s);', parent_partition_name, partition_name, partition_ids_string);
           EXECUTE sql_stmt;
         END IF;
         /*
-         * Create a dictionary for the lookup
+         * Create a partitions for the lookup fields
          */
-        /*
         FOREACH fs_id IN ARRAY fieldset_records.ids
         LOOP
-          SELECT token, type INTO fs FROM new_fieldsets WHERE id = fs_id;
+          SELECT token, type, field_id, field_token INTO fs FROM new_fieldsets WHERE id = fs_id;
           IF fs IS NOT NULL THEN
+            partition_status := NULL;
             SELECT fieldsets.get_field_data_type(fs.type::TEXT) INTO col_data_type;
-            sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
-            EXECUTE sql_stmt;
-            sql_stmt := format('CREATE INDEX IF NOT EXISTS %s_%s_idx ON fieldsets.%I USING btree (%s);', partition_name, fs.token, partition_name, fs.token);
-            EXECUTE sql_stmt;
-            IF fs.type::TEXT = 'fieldset'::TEXT THEN
-              sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_%s_fkey FOREIGN KEY (%s) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name, fs.token, fs.token);
+            lookup_partition_name := format('%s_%s', fs.field_token, fieldset_records.store);
+            SELECT to_regclass(format('fieldsets.%I',lookup_partition_name)) INTO partition_status;
+            IF partition_status IS NULL THEN
+              sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) TABLESPACE %s;', lookup_partition_name, partition_name, fs.field_id::TEXT, store_tbl_name);
+              EXECUTE sql_stmt;
+              sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_fkey FOREIGN KEY (id) REFERENCES fieldsets.tokens(id) DEFERRABLE;', lookup_partition_name, lookup_partition_name);
+              EXECUTE sql_stmt;
+              sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_fkey FOREIGN KEY (parent) REFERENCES fieldsets.tokens(id) DEFERRABLE;', lookup_partition_name, lookup_partition_name);
+              EXECUTE sql_stmt;
+              sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_field_id_fkey FOREIGN KEY (field_id) REFERENCES fieldsets.fields(id) DEFERRABLE;', lookup_partition_name, lookup_partition_name);
+              EXECUTE sql_stmt;
+
+              -- @TODO: Add in foreign key to value.fieldset - the field of field_value data type.
+              --IF fs.type::TEXT = 'fieldset'::TEXT THEN
+                --EXECUTE sql_stmt;
+              --END IF;
+              /**
+               * Create A clickhouse dictionary for our lookup.
+               */
+
+              SELECT fieldsets.get_field_data_type(fs.type::TEXT,'clickhouse') INTO col_data_type;
+              clickhouse_sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I (
+                id UInt64,
+                parent UInt64,
+                field_id UInt64,
+                type LowCardinality(String),
+                value Nested(
+                  fieldset UInt64,
+                  string String,
+                  number Int64,
+                  decimal Decimal,
+                  object String,
+                  list Array(Nullable(String)),
+                  array Array(Nullable(Decimal)),
+                  vector Array(Nullable(String)),
+                  bool Boolean,
+                  date Date,
+                  ts DateTime,
+                  search String,
+                  uuid UUID,
+                  function String,
+                  enum String,
+                  custom String,
+                  any String
+                )
+              ) ENGINE = PostgreSQL(
+                    %s,
+                    table = %L
+              );', lookup_partition_name, 'postgres_connection', lookup_partition_name);
+              sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);
+              EXECUTE sql_stmt;
+              clickhouse_sql_stmt := format('CREATE OR REPLACE DICTIONARY IF NOT EXISTS fieldsets.%I_dict (
+                id UInt64,
+                field_id UInt64,
+                value %s
+              )
+              PRIMARY KEY id, field_id
+              SOURCE(CLICKHOUSE(TABLE ''fieldsets.%I''))
+              LAYOUT(HASHED())
+              LIFETIME(0);', fs.field_token, col_data_type, lookup_partition_name);
+              sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);
+              EXECUTE sql_stmt;
+              clickhouse_sql_stmt := format('CREATE MATERIALIZED VIEW IF NOT EXISTS fieldsets.%I
+                TO fieldsets.%I_dict AS
+                SELECT id,
+                  field_id,
+                  value.%s AS value
+                FROM fieldsets.%I;', fs.field_token, fs.field_token, fs.type::TEXT, lookup_partition_name);
+              sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);
               EXECUTE sql_stmt;
             END IF;
           END IF;
         END LOOP;
-        */
       /**
        * STREAMS
        */
