@@ -6,12 +6,14 @@ Param(
 [Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $null, "User")
 [Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $null, "User")
 
-$utils_module_path = [System.IO.Path]::GetFullPath("/fieldsets-lib/pwsh/utils/")
-Import-Module -Function checkDependencies, lockfileExists, createLockfile -Name "$($utils_module_path)/utils.psm1"
+$utils_module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/pwsh/")
+Import-Module -Function lockfileExists, createLockfile -Name "$($utils_module_path)/utils.psm1"
+Import-Module -Function checkDependencies, isPluginPhaseContainer -Name "$($utils_module_path)/plugins.psm1"
 
 $padded_priority = $priority.ToString("D2")
 $script_token = "$($phase)-phase"
-$lockfile_path = "/data/checkpoints/${ENVIRONMENT}/phases/"
+$envname = [Environment]::GetEnvironmentVariable('ENVIRONMENT')
+$lockfile_path = "/checkpoints/$($envname)/fieldsets-local/phases/"
 
 # Create our path if it does not exist
 if (!(Test-Path -Path "$($lockfile_path)/$($phase)/")) {
@@ -19,25 +21,32 @@ if (!(Test-Path -Path "$($lockfile_path)/$($phase)/")) {
 }
 $dependencies_met = checkDependencies
 if ($dependencies_met) {
-    Set-Location -Path "/fieldsets-plugins/"
-    $plugin_dirs = Get-ChildItem -Path "/fieldsets-plugins/*" -Directory |
-    Select-Object FullName, Name, LastWriteTime, CreationTime
+    Set-Location -Path "/usr/local/fieldsets/plugins/" | Out-Null
+    $plugin_dirs = Get-ChildItem -Path "/usr/local/fieldsets/plugins/*" -Directory | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
     # Check to make sure all plugin dependencies are met.
     foreach ($plugin in $plugin_dirs) {
-        if (Test-Path -Path "$($plugin.FullName)/init.sh") {
-            $lockfile = "$($padded_priority)-plugin-$($plugin.Name).$($phase).complete"
-            if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
-                Write-Information -MessageData "Initializing plugin $($plugin.FullName)" -InformationAction Continue
-                Set-Location -Path "$($plugin.FullName)"
-                chmod +x "$($plugin.FullName)/init.sh"
-                & "bash" -c "exec `"$($plugin.FullName)/init.sh`""
-                createLockfile -lockfile "$($lockfile)" -lockfile_path "$($lockfile_path)/$($phase)"
+        Write-Host "Checking Plugin: $($plugin.BaseName)"
+        if (isPluginPhaseContainer -plugin "$($plugin.BaseName)") {
+            Write-Host "$($phase) Phase for Plugin: $($plugin.BaseName)"
+            if (Test-Path -Path "$($plugin.FullName)/init.sh") {
+                $lockfile = "$($padded_priority)-plugin-$($plugin.Name).$($phase).complete"
+                if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
+                    Write-Information -MessageData "Initializing plugin $($plugin.FullName)" -InformationAction Continue
+                    Set-Location -Path "$($plugin.FullName)" | Out-Null
+                    chmod +x "$($plugin.FullName)/init.sh"
+                    & "bash" -c "exec `"$($plugin.FullName)/init.sh`""
+                    createLockfile -lockfile "$($lockfile)" -lockfile_path "$($lockfile_path)/$($phase)"
+                }
             }
         }
     }
     [Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token, "User")
     [Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority, "User")
 } else {
-    Throw "Missing Dependencies"
+    if ($false -eq $dependencies_met) {
+        Throw "Missing Dependencies"
+    }
 }
-Set-Location -Path "/fieldsets/"
+Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
+Exit
+Exit-PSHostProcess

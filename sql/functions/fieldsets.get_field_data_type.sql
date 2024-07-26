@@ -23,7 +23,7 @@ AS $function$
                 END IF;
             WHEN 'number' THEN
                 IF engine = 'clickhouse' THEN
-                    RETURN 'UInt64';
+                    RETURN 'Int64';
                 ELSE
                     RETURN 'BIGINT';
                 END IF;

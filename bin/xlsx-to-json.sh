@@ -1,12 +1,12 @@
 #!/usr/bin/env pwsh
 Param(
-    [Parameter(Mandatory=$false,Position=0)][String]$input_file_path = '/fieldsets/econcircles/data/sharepoint/StockScreener/Archive/stock_screener_2024_04_08.xlsx',
-    [Parameter(Mandatory=$false,Position=1)][String]$output_filepath = '/fieldsets/econcircles/data/sharepoint/DB/Reports/StockScreener/stock_screener_2024_04_08.json',
+    [Parameter(Mandatory=$false,Position=0)][String]$input_file_path = '/usr/local/fieldsets/apps/econcircles/data/sharepoint/StockScreener/Archive/stock_screener_2024_04_08.xlsx',
+    [Parameter(Mandatory=$false,Position=1)][String]$output_filepath = '/usr/local/fieldsets/apps/econcircles/data/sharepoint/DB/Reports/StockScreener/stock_screener_2024_04_08.json',
     [Parameter(Mandatory=$false,Position=2)][String]$sheet_name = 'Dashboard',
-    [Parameter(Mandatory=$false,Position=3)][String]$field_map = '/fieldsets/econcircles/data/sharepoint/DB/Reports/StockScreener_field_map.json'
+    [Parameter(Mandatory=$false,Position=3)][String]$field_map = '/usr/local/fieldsets/apps/econcircles/data/sharepoint/DB/Reports/StockScreener_field_map.json'
 )
 
-#$module_path = "/fieldsets-lib/pwsh/utils/"
+#$module_path = "/usr/local/fieldsets/lib/pwsh/utils/"
 #$env:PSModulePath = $module_path + $env:PSModulePath
 #[Environment]::SetEnvironmentVariable("PSModulePath", $env:PSModulePath)
 

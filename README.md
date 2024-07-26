@@ -87,7 +87,7 @@ When you are done using the environment you can halt the environment using the c
 ## Additional Steps
 Once the containers are running you can clone any missing repositories to the `./src/` directory and run any application docker containers on the `default` network to get connectivity with localized container services.
 
-Any repositories cloned into `./src/` are ignored by git and will be available within the container from the `/fieldsets/` root level directory.
+Any repositories cloned into `./src/` are ignored by git and will be available within the container from the `/usr/local/fieldsets/apps/` root level directory.
 
 If you utilizing this repository as a boiler plate ad are making changes to the container itself, you may want to utilize the following docker-compose commands:
 
@@ -101,13 +101,13 @@ Remove all data volumes when shutting down. This will prompt a rebuild on all co
 If you'd like to utilize a terminal within the container, make sure the environment variable `ENABLE_TERMINAL=true` is set. You can then run the command: `docker exec -it fieldsets-local /bin/bash`
 
 ## Deploying With Fieldsets Local
-Fieldsets local handles setting up tunnels if outside of AWS as well as creating foreign data servers in any environment. This is all handled within the [entrypoint script](./entrypoint.sh). It will set a series of checkpoints on it's data volume found at `/data/checkpoints/$ENVIRONMENT/fieldsets-local`. After the entrypoint script it will execute the command `/bin/bash` which will only create a pseudo tty terminal if you sepcify `ENABLE_TERMINAL=true` within your dotenv file. You can use this container and override this command with your own custom command within a `docker-compose.override.yml` file. An example would look like so.
+Fieldsets local handles setting up tunnels if outside of AWS as well as creating foreign data servers in any environment. This is all handled within the [entrypoint script](./entrypoint.sh). It will set a series of checkpoints on it's data volume found at `/checkpoints/$ENVIRONMENT/fieldsets-local`. After the entrypoint script it will execute the command `/bin/bash` which will only create a pseudo tty terminal if you sepcify `ENABLE_TERMINAL=true` within your dotenv file. You can use this container and override this command with your own custom command within a `docker-compose.override.yml` file. An example would look like so.
 ```
 version: '3.7'
 services:
     fieldsets-local:
         tty: false
-        command: /bin/bash -c "/fieldsets/my_repo/init.sh;"
+        command: /bin/bash -c "/usr/local/fieldsets/apps/my_repo/init.sh;"
 ```
 This would execute your init script you have clone into ./src and exit the container after it completes successfully.
 

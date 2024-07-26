@@ -17,14 +17,14 @@ set -eEa -o pipefail
 #===
 
 export PGPASSWORD=${POSTGRES_PASSWORD}
-export DATA_PATH=/data/checkpoints/${ENVIRONMENT}/fieldsets-local/
+export DATA_PATH=/checkpoints/${ENVIRONMENT}/fieldsets-local/
 export PRIORITY=0
 
 #===
 # Functions
 #===
 # Includes Methods traperr, wait_for_threads, log
-source /fieldsets-lib/bash/utils.sh
+source /usr/local/fieldsets/lib/bash/utils.sh
 
 ##
 # start: Wrapper start up function. Executes everything in mapped init directory.
