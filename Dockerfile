@@ -86,9 +86,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/*
 
-# Add main work dir to PATH
-WORKDIR /fieldsets
-ENV PATH="/fieldsets:${PATH}"
+WORKDIR /usr/local/fieldsets
+ENV PATH="/usr/local/fieldsets/bin:${PATH}"
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
