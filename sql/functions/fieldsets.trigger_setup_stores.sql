@@ -13,8 +13,6 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
     fieldset_parent_id BIGINT;
     partition_name TEXT;
     lookup_partition_name TEXT;
-    partition_ids BIGINT[];
-    partition_ids_string TEXT;
     parent_partition_name TEXT;
     fieldset_records RECORD;
     fieldset_parent_record RECORD;
@@ -106,12 +104,6 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
               parent_partition_name := store_tbl_name;
           END IF;
         END IF;
-
-        --partition_ids := fieldset_records.partition_ids;
-
-        --IF array_position(partition_ids,fieldset_parent_id) IS NULL THEN
-        --    partition_ids := array_append(partition_ids,fieldset_parent_id);
-        --END IF;
 
         fieldset_partition_tbl_name := format('__fieldsets_%s_%s', fieldset_records.set_token, fieldset_records.store);
         partition_name := format('%s_%s', fieldset_records.set_token, fieldset_records.store);
@@ -261,7 +253,13 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
       ELSIF fieldset_records.store = 'document' THEN
         store_tbl_name := 'documents';
 
-        SELECT parent_token INTO fieldset_parent_token FROM fieldsets.fieldsets WHERE token = fieldset_records.set_token;
+        SELECT id,token,parent,parent_token,set_id,set_token,field_id,field_token,type,store INTO fieldset_parent_record
+        FROM fieldsets.fieldsets
+        WHERE token = fieldset_records.set_token;
+
+        fieldset_parent_token := fieldset_parent_record.parent_token;
+        fieldset_parent_id := fieldset_parent_record.parent;
+
         IF fieldset_parent_token = 'fieldset' OR fieldset_parent_token IS NULL THEN
           parent_partition_name := store_tbl_name;
         ELSE
@@ -276,18 +274,13 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
         partition_name := format('%s_%s', fieldset_records.set_token, fieldset_records.store);
         SELECT to_regclass(format('fieldsets.%I',partition_name)) INTO partition_status;
         IF partition_status IS NULL THEN
-          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I(CONSTRAINT %s_parent_chk CHECK(parent IN (%s)) NO INHERIT) INHERITS (fieldsets.%I) TABLESPACE %s;', partition_name, partition_name, fieldset_records.partition_ids, parent_partition_name, store_tbl_name);
+          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I(CONSTRAINT %s_parent_chk CHECK(parent IN (%s)) NO INHERIT) INHERITS (fieldsets.%I) TABLESPACE %s;', partition_name, partition_name, fieldset_parent_record.id, parent_partition_name, store_tbl_name);
           EXECUTE sql_stmt;
-          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_pkey PRIMARY KEY (id);', partition_name, partition_name);
+          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_pkey PRIMARY KEY (id,parent);', partition_name, partition_name);
           EXECUTE sql_stmt;
           sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_fkey FOREIGN KEY (id) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name);
           EXECUTE sql_stmt;
           sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_fkey FOREIGN KEY (parent) REFERENCES fieldsets.tokens(id) DEFERRABLE;', partition_name, partition_name);
-          EXECUTE sql_stmt;
-        ELSE
-          sql_stmt := format('ALTER TABLE fieldsets.%I DROP CONSTRAINT %s_parent_chk;', partition_name, partition_name);
-          EXECUTE sql_stmt;
-          sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_chk CHECK(parent IN (%s)) NO INHERIT;', partition_name, partition_name, fieldset_records.partition_ids);
           EXECUTE sql_stmt;
         END IF;
 
@@ -301,8 +294,8 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
         FROM fieldsets.fieldsets
         WHERE token = fieldset_records.set_token;
 
-        fieldset_parent_token := fieldset_parent_record.parent_token;
-        fieldset_parent_id := fieldset_parent_record.parent;
+        fieldset_parent_token := fieldset_parent_record.token;
+        fieldset_parent_id := fieldset_parent_record.id;
 
         parent_partition_name := store_tbl_name;
         IF fieldset_parent_token IS NULL OR fieldset_parent_id IS NULL THEN
@@ -310,13 +303,11 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
           fieldset_parent_token := 'fieldset';
         END IF;
 
-        partition_ids := ARRAY[fieldset_parent_record.id];
-        partition_ids_string := array_to_string(partition_ids,',');
         partition_name := format('%s_%s', fieldset_records.set_token, fieldset_records.store);
 
         SELECT to_regclass(format('fieldsets.%I',partition_name)) INTO partition_status;
         IF partition_status IS NULL THEN
-          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) PARTITION BY LIST(field_id) TABLESPACE %s;', partition_name, parent_partition_name, partition_ids_string, store_tbl_name);
+          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) PARTITION BY LIST(field_id) TABLESPACE %s;', partition_name, parent_partition_name, fieldset_parent_id::TEXT, store_tbl_name);
           EXECUTE sql_stmt;
           sql_stmt := format('CREATE INDEX IF NOT EXISTS %s_type_idx ON fieldsets.%I USING btree (type);', partition_name, partition_name);
           EXECUTE sql_stmt;
