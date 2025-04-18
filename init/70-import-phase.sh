@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 Param(
-    [Parameter(Mandatory=$false,Position=0)][String]$priority = "99",
-    [Parameter(Mandatory=$false,Position=1)][String]$phase = "run"
+    [Parameter(Mandatory=$false,Position=0)][String]$priority = "70",
+    [Parameter(Mandatory=$false,Position=1)][String]$phase = "import"
 )
 $script_token = "$($phase)-phase"
 $module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/pwsh")
@@ -15,11 +15,11 @@ foreach ($plugin_dirs in $plugins_priority_list.Values) {
         if ($null -ne $plugin_dir) {
             $plugin = Get-Item -Path "$($plugin_dir)" | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
             if (isPluginPhaseContainer -plugin "$($plugin.BaseName)") {
-                Write-Host "$($phase) Phase for Plugin: $($plugin.BaseName)"
-                if (Test-Path -Path "$($plugin.FullName)/run.sh") {
+                Write-Host "Post $($phase) phase for plugin: $($plugin.BaseName)"
+                if (Test-Path -Path "$($plugin.FullName)/import.sh") {
                     Set-Location -Path "$($plugin.FullName)" | Out-Null
-                    chmod +x "$($plugin.FullName)/run.sh" | Out-Null
-                    & "bash" -c "exec nohup `"$($plugin.FullName)/run.sh`" >/dev/null 2>&1 &"
+                    chmod +x "$($plugin.FullName)/import.sh" | Out-Null
+                    & "bash" -c "exec `"$($plugin.FullName)/import.sh`""
                 }
             }
         }
@@ -27,6 +27,5 @@ foreach ($plugin_dirs in $plugins_priority_list.Values) {
 }
 [System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token, "User")
 [System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority, "User")
-
 Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
 Exit

@@ -1,4 +1,3 @@
-version: '3.7'
 services:
     fieldsets-local:
         image: ${CONTAINER_REGISTRY:-fieldsets}/fieldsets-local:${FIELDSETS_LOCAL_VERSION:-latest}

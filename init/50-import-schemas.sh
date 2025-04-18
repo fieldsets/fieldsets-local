@@ -6,8 +6,10 @@ $POSTGRES_PORT = [System.Environment]::GetEnvironmentVariable('POSTGRES_PORT')
 $POSTGRES_USER = [System.Environment]::GetEnvironmentVariable('POSTGRES_USER')
 $POSTGRES_PASSWORD = [System.Environment]::GetEnvironmentVariable('POSTGRES_PASSWORD')
 
-[Environment]::SetEnvironmentVariable("PGPASSWORD", $POSTGRES_PASSWORD)
+[System.Environment]::SetEnvironmentVariable("PGPASSWORD", $POSTGRES_PASSWORD)
 
 $import_stmt = "CALL fieldsets.import_json_schemas();"
-& "psql" -v ON_ERROR_STOP=1 --host "$POSTGRES_HOST" --port "$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -c "$import_stmt"
+& "psql" -v ON_ERROR_STOP=1 --host "$POSTGRES_HOST" --port "$POSTGRES_PORT" --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -c "$import_stmt" | Out-Null
 Write-Output "Schemas imported from pipeline.imports"
+
+Exit

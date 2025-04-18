@@ -4,7 +4,8 @@ Param(
     [Parameter(Mandatory=$true,Position=1)][String]$source,
     [Parameter(Mandatory=$true,Position=2)][String]$json,
     [Parameter(Mandatory=$false,Position=3)][String]$type = 'schema',
-    [Parameter(Mandatory=$false,Position=4)][Int]$priority = 0
+    [Parameter(Mandatory=$false,Position=4)][Int]$priority = 0,
+    [Parameter(Mandatory=$false,Position=5)][String]$database = 'fieldsets'
 )
 
 $POSTGRES_HOST = [System.Environment]::GetEnvironmentVariable('POSTGRES_HOST')

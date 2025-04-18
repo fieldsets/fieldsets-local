@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 ARG TIMEZONE
 
@@ -42,9 +42,10 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         libc-dev \
         dnsutils \
         g++ \
-        python3 \
+        python3-full \
         python3-dev \
         python3-pip \
+        python3-venv \
         zip \
         nasm \
         yasm \
@@ -62,24 +63,23 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         libpq-dev \
         unzip && \
     bash /root/.local/bin/root-certs.sh /tmp/certs/ && \
+    install -d /usr/share/postgresql-common/pgdg && \
     curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/apt.postgresql.org.gpg >/dev/null && \
-    echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/apt.postgresql.org.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
     GNUPGHOME=$(mktemp -d) && \
     GNUPGHOME="${GNUPGHOME}" gpg --no-default-keyring --keyring /usr/share/keyrings/clickhouse-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 8919F6BD2B48D754 && \
     chmod +r /usr/share/keyrings/clickhouse-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | tee /etc/apt/sources.list.d/clickhouse.list && \
     curl https://packages.fluentbit.io/fluentbit.key | gpg --dearmor | tee /usr/share/keyrings/fluentbit-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/fluentbit-keyring.gpg] https://packages.fluentbit.io/debian/$(lsb_release -cs) $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/fluent-bit.list && \
-    wget -q https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb -P /tmp/ && \
+    wget -q https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb -P /tmp/ && \
     dpkg -i /tmp/packages-microsoft-prod.deb && \
     rm /tmp/packages-microsoft-prod.deb && \
     apt-get -y update && \
-    pip3 install virtualenv && \
     apt-get install -y --no-install-recommends \
         powershell \
         fluent-bit \
         clickhouse-client \
-        pgdg-keyring \
         postgresql-client-${POSTGRES_VERSION:-15} && \
     ln -s /opt/fluent-bit/bin/fluent-bit /usr/local/bin/fluent-bit && \
     apt-get autoremove -y && \
@@ -87,8 +87,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
     rm -rf /var/lib/apt/lists/*
 
 # Add main work dir to PATH
-WORKDIR /fieldsets
-ENV PATH="/fieldsets:${PATH}"
+WORKDIR /usr/local/fieldsets
+ENV PATH="/usr/local/fieldsets/bin:${PATH}"
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 

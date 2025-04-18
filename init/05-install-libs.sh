@@ -11,7 +11,7 @@ set -eEa -o pipefail
 # Variables
 #===
 
-export PRIORITY=5
+export PRIORITY="05"
 
 #===
 # Functions
@@ -24,7 +24,7 @@ source /usr/local/fieldsets/lib/bash/utils.sh
 ##
 init() {
     log "Installing libraries & modules...."
-    pwsh -Command "& {Install-Module -Name ImportExcel -Force -AllowClobber}"
+    pwsh -Command "& {Install-Module -Name ImportExcel -Force -AllowClobber | Out-Null}"
     log "Libraries installed."
 }
 

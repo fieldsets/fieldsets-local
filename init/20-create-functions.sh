@@ -13,7 +13,7 @@ set -eEa -o pipefail
 # Variables
 #===
 
-export PRIORITY=20
+export PRIORITY="20"
 export PGPASSWORD=${POSTGRES_PASSWORD}
 
 #===

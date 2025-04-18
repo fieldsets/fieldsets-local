@@ -1,7 +1,7 @@
-Package: r-*
-Pin: release a=sid
-Pin-Priority: 1000
+Package: *
+Pin: release o=apt.postgresql.org
+Pin-Priority: 500
 
 Package: *
-Pin: release a=bullseye
+Pin: release n=bookworm
 Pin-Priority: 100

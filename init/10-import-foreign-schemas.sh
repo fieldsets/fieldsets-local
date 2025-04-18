@@ -6,7 +6,7 @@
 
 set -e
 
-export PRIORITY=10
+export PRIORITY="10"
 export PGPASSWORD=${POSTGRES_PASSWORD}
 FDFILE="/checkpoints/${ENVIRONMENT}/fieldsets-local/${PRIORITY}-pg-foreign-data-import.complete"
 
