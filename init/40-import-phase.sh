@@ -9,6 +9,18 @@ Import-Module -Function isPluginPhaseContainer, buildPluginPriortyList -Name "$(
 
 Set-Location -Path "/usr/local/fieldsets/plugins/" | Out-Null
 # Ordered plugins by priority
+$envname = [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
+$hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
+$log_path = "/usr/local/fieldsets/data/logs/$($envname)/$($hostname)"
+
+if (!(Test-Path -Path "$($log_path)/$($script_token).log")) {
+    New-Item -Path "$($log_path)" -Name "$($script_token).log" -ItemType File | Out-Null
+}
+
+if (!(Test-Path -Path "$($log_path)/$($script_token).error.log")) {
+    New-Item -Path "$($log_path)" -Name "$($script_token).error.log" -ItemType File | Out-Null
+}
+
 $plugins_priority_list = buildPluginPriortyList
 foreach ($plugin_dirs in $plugins_priority_list.Values) {
     foreach ($plugin_dir in $plugin_dirs) {
@@ -19,7 +31,8 @@ foreach ($plugin_dirs in $plugins_priority_list.Values) {
                 if (Test-Path -Path "$($plugin.FullName)/import.sh") {
                     Set-Location -Path "$($plugin.FullName)" | Out-Null
                     chmod +x "$($plugin.FullName)/import.sh" | Out-Null
-                    & "bash" -c "exec `"$($plugin.FullName)/import.sh`" -preimport"
+                    $bash = (Get-Command bash).Source
+                    & $bash -c "exec $($plugin.FullName)/import.sh -preimport"
                 }
             }
         }

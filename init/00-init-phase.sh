@@ -20,6 +20,7 @@ $script_token = "$($phase)-phase"
 $envname = [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
 $hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
 $lockfile_path = "/usr/local/fieldsets/data/checkpoints/$($envname)/$($hostname)/phases/"
+$log_path = "/usr/local/fieldsets/data/logs/$($envname)/$($hostname)"
 
 # Create our path if it does not exist
 if (!(Test-Path -Path "/usr/local/fieldsets/data/checkpoints/")) {
@@ -37,6 +38,29 @@ if (!(Test-Path -Path "$($lockfile_path)")) {
 if (!(Test-Path -Path "$($lockfile_path)/$($phase)/")) {
     New-Item -Path "$($lockfile_path)" -Name "$($phase)" -ItemType Directory | Out-Null
 }
+
+# Create our log path
+if (!(Test-Path -Path "/usr/local/fieldsets/data/logs/")) {
+    New-Item -Path "/usr/local/fieldsets/data" -Name "logs" -ItemType Directory | Out-Null
+}
+
+if (!(Test-Path -Path "/usr/local/fieldsets/data/logs/$($envname)")) {
+    New-Item -Path "/usr/local/fieldsets/data/logs" -Name "$($envname)" -ItemType Directory | Out-Null
+}
+
+if (!(Test-Path -Path "$($log_path)")) {
+    New-Item -Path "/usr/local/fieldsets/data/logs/$($envname)" -Name "$($hostname)" -ItemType Directory | Out-Null
+}
+
+if (!(Test-Path -Path "$($log_path)/$($script_token).log")) {
+    New-Item -Path "$($log_path)" -Name "$($script_token).log" -ItemType File | Out-Null
+}
+
+if (!(Test-Path -Path "$($log_path)/$($script_token).error.log")) {
+    New-Item -Path "$($log_path)" -Name "$($script_token).error.log" -ItemType File | Out-Null
+}
+
+
 # Check to make sure all plugin dependencies are met.
 $dependencies_met = checkDependencies
 if ($dependencies_met) {
@@ -55,7 +79,8 @@ if ($dependencies_met) {
                         if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
                             Set-Location -Path "$($plugin.FullName)" | Out-Null
                             chmod +x "$($plugin.FullName)/init.sh" | Out-Null
-                            & "bash" -c "exec `"$($plugin.FullName)/init.sh`""
+                            $bash = (Get-Command bash).Source
+                            & $bash -c "exec $($plugin.FullName)/init.sh"
                             createLockfile -lockfile "$($lockfile)" -lockfile_path "$($lockfile_path)/$($phase)" | Out-Null
                         }
                     }

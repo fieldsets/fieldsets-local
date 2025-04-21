@@ -10,6 +10,14 @@ Import-Module -Function isPluginPhaseContainer, buildPluginPriortyList -Name "$(
 Set-Location -Path "/usr/local/fieldsets/plugins/" | Out-Null
 # Ordered plugins by priority
 $plugins_priority_list = buildPluginPriortyList
+$envname = [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
+$hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
+$log_path = "/usr/local/fieldsets/data/logs/$($envname)/$($hostname)"
+
+if (!(Test-Path -Path "$($log_path)/$($script_token).log")) {
+    New-Item -Path "$($log_path)" -Name "$($script_token).log" -ItemType File | Out-Null
+}
+
 foreach ($plugin_dirs in $plugins_priority_list.Values) {
     foreach ($plugin_dir in $plugin_dirs) {
         if ($null -ne $plugin_dir) {
@@ -19,7 +27,9 @@ foreach ($plugin_dirs in $plugins_priority_list.Values) {
                 if (Test-Path -Path "$($plugin.FullName)/run.sh") {
                     Set-Location -Path "$($plugin.FullName)" | Out-Null
                     chmod +x "$($plugin.FullName)/run.sh" | Out-Null
-                    & "bash" -c "exec nohup `"$($plugin.FullName)/run.sh`" >/dev/null 2>&1 &"
+
+                    $bash = (Get-Command bash).Source
+                    & $bash -c "exec $($plugin.FullName)/run.sh"
                 }
             }
         }
