@@ -18,6 +18,7 @@ if (!(Test-Path -Path "$($log_path)/$($script_token).log")) {
     New-Item -Path "$($log_path)" -Name "$($script_token).log" -ItemType File | Out-Null
 }
 
+# Create a Powershell session which all of our framework code will be executed in.
 foreach ($plugin_dirs in $plugins_priority_list.Values) {
     foreach ($plugin_dir in $plugin_dirs) {
         if ($null -ne $plugin_dir) {

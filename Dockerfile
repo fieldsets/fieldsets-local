@@ -6,11 +6,14 @@ ENV TZ=${TIMEZONE:-America/New_York}
 ENV DEBIAN_FRONTEND='noninteractive'
 
 ARG POSTGRES_VERSION
+ARG SSH_PORT
 
 # If the certs directory exists, copy the certs and utilize them.
 ARG BUILD_CONTEXT_PATH
 COPY ${BUILD_CONTEXT_PATH}bin/root-certs.sh /root/.local/bin/root-certs.sh
 COPY ${BUILD_CONTEXT_PATH}cert[s]/* /tmp/certs/
+
+COPY ${BUILD_CONTEXT_PATH}sshd.conf /etc/sshd_config
 
 # Install packages
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
@@ -26,6 +29,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         procps \
         vim \
         openssh-client \
+        openssh-server \
         net-tools \
         jq \
         wget \
@@ -84,11 +88,15 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
     ln -s /opt/fluent-bit/bin/fluent-bit /usr/local/bin/fluent-bit && \
     apt-get autoremove -y && \
     apt-get clean -y && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    touch /etc/ssh/sshd_config.d/fieldsets.conf && \
+    echo "PORT=${SSH_PORT:-2022}" >> /etc/ssh/sshd_config.d/fieldsets.conf
 
 # Add main work dir to PATH
 WORKDIR /usr/local/fieldsets
 ENV PATH="/usr/local/fieldsets/bin:${PATH}"
+
+EXPOSE ${SSH_PORT:-2022}
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 

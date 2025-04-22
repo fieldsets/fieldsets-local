@@ -315,7 +315,7 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
 
         SELECT to_regclass(format('fieldsets.%I',partition_name)) INTO partition_status;
         IF partition_status IS NULL THEN
-          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) PARTITION BY LIST(field_id) TABLESPACE %s;', partition_name, parent_partition_name, partition_ids_string, store_tbl_name);
+          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) TABLESPACE %s;', partition_name, parent_partition_name, partition_ids_string, store_tbl_name);
           EXECUTE sql_stmt;
 
           sql_stmt := format('CREATE INDEX IF NOT EXISTS %s_type_idx ON fieldsets.%I USING btree (type);', partition_name, partition_name);
@@ -344,8 +344,6 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
               EXECUTE sql_stmt;
               sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_fkey FOREIGN KEY (parent) REFERENCES fieldsets.tokens(id) DEFERRABLE;', lookup_partition_name, lookup_partition_name);
               EXECUTE sql_stmt;
-              sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_field_id_fkey FOREIGN KEY (field_id) REFERENCES fieldsets.fields(id) DEFERRABLE;', lookup_partition_name, lookup_partition_name);
-              EXECUTE sql_stmt;
 
               -- @TODO: Add in foreign key to value.fieldset - the field of field_value data type.
               --IF fs.type::TEXT = 'fieldset'::TEXT THEN
@@ -359,8 +357,6 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
               clickhouse_sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I (
                 id UInt64,
                 parent UInt64,
-                field_id UInt64,
-                type LowCardinality(String),
                 value Nested(
                   fieldset UInt64,
                   string String,
@@ -388,10 +384,8 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
               EXECUTE sql_stmt;
               clickhouse_sql_stmt := format('CREATE OR REPLACE DICTIONARY IF NOT EXISTS fieldsets.%I_dict (
                 id UInt64,
-                field_id UInt64,
                 value %s
               )
-              PRIMARY KEY id, field_id
               SOURCE(CLICKHOUSE(TABLE ''fieldsets.%I''))
               LAYOUT(HASHED())
               LIFETIME(0);', fs.field_token, col_data_type, lookup_partition_name);
@@ -400,7 +394,6 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
               clickhouse_sql_stmt := format('CREATE MATERIALIZED VIEW IF NOT EXISTS fieldsets.%I
                 TO fieldsets.%I_dict AS
                 SELECT id,
-                  field_id,
                   value.%s AS value
                 FROM fieldsets.%I;', fs.field_token, fs.field_token, fs.type::TEXT, lookup_partition_name);
               sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);

@@ -45,6 +45,26 @@ start() {
 		log "Clickhouse is ready for connections."
 	fi
 
+	mkdir -p $SSH_KEY_PATH
+	SESSION_KEY_PATH=$(realpath ${SSH_KEY_PATH/#\~/$HOME})
+	SESSION_KEY=$(realpath "${SESSION_KEY_PATH}/${FIELDSETS_SESSION_KEY:-fieldsets_rsa}")
+
+	# Make sure a ssh key exists for our sessions.
+	if [[ ! -f "${SESSION_KEY}" ]]; then
+		ssh-keygen -b 2048 -t rsa -f $SESSION_KEY -q -N ""
+		if [[ ! -f "${SESSION_KEY_PATH}/authorized_keys" ]]; then
+			touch ${SESSION_KEY_PATH}/authorized_keys
+		fi
+		cat ${SESSION_KEY}.pub >> ${SESSION_KEY_PATH}/authorized_keys
+	fi
+
+	# Start a persistant powershell session
+	if [[ -z "${FIELDSETS_SESSION_HOST}" ]]; then
+		export FIELDSETS_SESSION_HOST="${FIELDSETS_LOCAL_HOST:-172.28.0.6}"
+	fi
+
+	#nohup /usr/bin/pwsh -CustomPipeName FieldSetsLocalPipe -WorkingDirectory /usr/local/fieldsets/ -NoExit -Command "& {New-PSSession -Name FieldsetsLocalSession -HostName ${FIELDSETS_SESSION_HOST} -Options @{StrictHostKeyChecking='no'} -UserName root -Port ${SSH_PORT:-2022} -KeyFilePath ${SESSION_KEY}}" >/dev/null 2>&1 &
+
 	#make sure our scripts are flagged at executable.
 	chmod +x /docker-entrypoint-init.d/*.sh
 	# After everything has booted, run any custom scripts.

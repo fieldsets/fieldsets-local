@@ -9,8 +9,8 @@ Param(
  # Scripts are flagged with a lockfile after they are run successfully.
  # If you need to rerun and init script you can delete the corresponding file found in /$lockfile_path/init
  ##>
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $null, "User")
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $null, "User")
+[System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $null)
+[System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $null)
 
 $module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/pwsh")
 Import-Module -Function lockfileExists, createLockfile -Name "$($module_path)/utils.psm1"
@@ -88,8 +88,8 @@ if ($dependencies_met) {
             }
         }
     }
-    [System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token, "User")
-    [System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority, "User")
+    [System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token)
+    [System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority)
 } else {
     if ($false -eq $dependencies_met) {
         Throw "Missing Dependencies"

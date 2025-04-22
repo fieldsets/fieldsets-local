@@ -8,6 +8,7 @@ services:
                 TIMEZONE: ${TIMEZONE:-America/New_York}
                 POSTGRES_VERSION: ${POSTGRES_VERSION:-15}
                 BUILD_CONTEXT_PATH: ${FIELDSETS_LOCAL_CONFIG_PATH:-./}
+                SSH_PORT: ${SSH_PORT:-2022}
         container_name: fieldsets-local
         hostname: fieldsets-local
         tty: ${ENABLE_TERMINAL:-true}
@@ -15,6 +16,10 @@ services:
             ENVIRONMENT: ${ENVIRONMENT:-dev-local}
             FIELDSETS_INFRASTRUCTURE_ROLE: ${FIELDSETS_INFRASTRUCTURE_ROLE:-node}
             FIELDSETS_DB: ${FIELDSETS_DB:-postgres}
+            SSH_KEY_PATH: ${SSH_KEY_PATH:-~/.ssh/}
+            SSH_PORT: ${SSH_PORT:-2022}
+            FIELDSETS_SESSION_HOST: ${FIELDSETS_SESSION_HOST}
+            FIELDSETS_SESSION_KEY: ${FIELDSETS_SESSION_KEY:-fieldsets_rsa}
             ENABLE_STORE: ${ENABLE_STORE:-false}
             FIELDSETS_STORE: ${FIELDSETS_STORE:-clickhouse}
             LOGGER_HOST: ${LOGGER_HOST:-172.28.0.2}
