@@ -19,6 +19,8 @@ Import-Module -Function checkDependencies, isPluginPhaseContainer, buildPluginPr
 $script_token = "$($phase)-phase"
 $envname = [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
 $hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
+$dotnet_ver = [System.Environment]::GetEnvironmentVariable('DOTNET_VERSION')
+
 $lockfile_path = "/usr/local/fieldsets/data/checkpoints/$($envname)/$($hostname)/phases/"
 $log_path = "/usr/local/fieldsets/data/logs/$($envname)/$($hostname)"
 
@@ -56,8 +58,29 @@ if (!(Test-Path -Path "$($log_path)/$($script_token).log")) {
     New-Item -Path "$($log_path)" -Name "$($script_token).log" -ItemType File | Out-Null
 }
 
-if (!(Test-Path -Path "$($log_path)/$($script_token).error.log")) {
-    New-Item -Path "$($log_path)" -Name "$($script_token).error.log" -ItemType File | Out-Null
+# Install libraries
+try {
+    Get-Module -ListAvailable -Name ImportExcel
+} catch {
+    Install-Module ImportExcel -Scope AllUsers -Force -AllowClobber | Out-Null
+}
+
+try {
+    Get-Package -Name ClickHouse.Client
+} catch {
+    Install-Package ClickHouse.Client -Source NuGet.org -Scope AllUsers -Force -AllowClobber | Out-Null
+}
+
+try {
+    Get-Package -Name Npgsql | Out-Null
+} catch {
+    Install-Package Npgsql -Source NuGet.org -Scope AllUsers -Force -AllowClobber | Out-Null
+}
+
+try {
+    Get-Package -Name Microsoft.Extensions.Logging.Abstractions -RequiredVersion "$($dotnet_ver).0.0" | Out-Null
+} catch {
+    Install-Package Microsoft.Extensions.Logging.Abstractions -RequiredVersion "${DOTNET_VERSION}.0.0" -Source NuGet.org -Scope AllUsers -Force | Out-Null
 }
 
 
@@ -74,13 +97,18 @@ if ($dependencies_met) {
                 Write-Host "Checking Plugin: $($plugin.BaseName)"
                 if (isPluginPhaseContainer -plugin "$($plugin.BaseName)") {
                     Write-Host "$($phase) phase for plugin: $($plugin.BaseName)"
-                    if (Test-Path -Path "$($plugin.FullName)/init.sh") {
+                    if (Test-Path -Path "$($plugin.FullName)/$($phase).sh") {
                         $lockfile = "$($priority)-plugin-$($plugin.Name).$($phase).complete"
                         if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
                             Set-Location -Path "$($plugin.FullName)" | Out-Null
-                            chmod +x "$($plugin.FullName)/init.sh" | Out-Null
-                            $bash = (Get-Command bash).Source
-                            & $bash -c "exec $($plugin.FullName)/init.sh"
+                            chmod +x "$($plugin.FullName)/$($phase).sh" | Out-Null
+                            $processOptions = @{
+                                Filepath = "$($plugin.FullName)/$($phase).sh"
+                                RedirectStandardInput = "/dev/null"
+                                RedirectStandardError = "/dev/tty"
+                                RedirectStandardOutput = "$($log_path)/$($script_token).log"
+                            }
+                            Start-Process @processOptions -Wait
                             createLockfile -lockfile "$($lockfile)" -lockfile_path "$($lockfile_path)/$($phase)" | Out-Null
                         }
                     }

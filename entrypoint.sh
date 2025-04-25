@@ -36,16 +36,13 @@ start() {
 
 	# Let's wait for our DBs to accept connections.
 	log "Waiting for Postgres container...."
-	timeout 90s bash -c "until pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER; do printf '.'; sleep 5; done; printf '\n'"
+	timeout 90s bash -c "until pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER; do sleep 5; done; printf '\n'"
 	log "PostgreSQL is ready for connections."
 
-	if [[ "${ENABLE_STORE:-false}" == "true" ]]; then
-		log "Waiting for Clickhouse container...."
-		timeout 90s bash -c "until curl --silent --output /dev/null http://${CLICKHOUSE_HOST}:${CLICKHOUSE_PORT}/ping; do printf '.'; sleep 5; done; printf '\n'"
-		log "Clickhouse is ready for connections."
-	fi
+	log "Waiting for Clickhouse container...."
+	timeout 90s bash -c "until curl --silent --output /dev/null http://${CLICKHOUSE_HOST}:${CLICKHOUSE_PORT}/ping; do sleep 5; done; printf '\n'"
+	log "Clickhouse is ready for connections."
 
-	mkdir -p $SSH_KEY_PATH
 	SESSION_KEY_PATH=$(realpath ${SSH_KEY_PATH/#\~/$HOME})
 	SESSION_KEY=$(realpath "${SESSION_KEY_PATH}/${FIELDSETS_SESSION_KEY:-fieldsets_rsa}")
 
@@ -58,21 +55,30 @@ start() {
 		cat ${SESSION_KEY}.pub >> ${SESSION_KEY_PATH}/authorized_keys
 	fi
 
-	# Start a persistant powershell session
 	if [[ -z "${FIELDSETS_SESSION_HOST}" ]]; then
-		export FIELDSETS_SESSION_HOST="${FIELDSETS_LOCAL_HOST:-172.28.0.6}"
+		FIELDSETS_SESSION_HOST="${FIELDSETS_LOCAL_HOST}"
 	fi
-
-	#nohup /usr/bin/pwsh -CustomPipeName FieldSetsLocalPipe -WorkingDirectory /usr/local/fieldsets/ -NoExit -Command "& {New-PSSession -Name FieldsetsLocalSession -HostName ${FIELDSETS_SESSION_HOST} -Options @{StrictHostKeyChecking='no'} -UserName root -Port ${SSH_PORT:-2022} -KeyFilePath ${SESSION_KEY}}" >/dev/null 2>&1 &
+	ssh-keygen -f "${SESSION_KEY_PATH}/known_hosts" -R "[${FIELDSETS_SESSION_HOST}]:${SSH_PORT}"
+	service ssh start
 
 	#make sure our scripts are flagged at executable.
 	chmod +x /docker-entrypoint-init.d/*.sh
-	# After everything has booted, run any custom scripts.
-	for f in /docker-entrypoint-init.d/*.sh; do
-		echo $f;
-		bash -c "exec ${f}";
-	done
 
+	# Pass our entrypoint scipt directory managemnt over to powershell so we can create a persistant session
+	log "Starting Pipeline"
+	LOG_PATH=$(realpath "/usr/local/fieldsets/data/logs/${ENVIRONMENT}/fieldsets-local/")
+	mkdir -p $LOG_PATH
+	if [[ ! -f "${LOG_PATH}pipeline.log" ]]; then
+		touch "${LOG_PATH}pipeline.log"
+	fi
+	chmod +x /usr/local/fieldsets/bin/pipeline.sh
+	nohup /usr/local/fieldsets/bin/pipeline.sh >> /usr/local/fieldsets/data/logs/pipeline.log 2>&1 &
+
+	# After everything has booted, run any custom scripts.
+	#for f in /docker-entrypoint-init.d/*.sh; do
+	#	echo $f;
+	#	bash -c "exec ${f}";
+	#done
 	log "Local Startup Complete."
 }
 

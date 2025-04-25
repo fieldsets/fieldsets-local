@@ -7,13 +7,12 @@ ENV DEBIAN_FRONTEND='noninteractive'
 
 ARG POSTGRES_VERSION
 ARG SSH_PORT
+ARG DOTNET_VERSION
 
 # If the certs directory exists, copy the certs and utilize them.
 ARG BUILD_CONTEXT_PATH
 COPY ${BUILD_CONTEXT_PATH}bin/root-certs.sh /root/.local/bin/root-certs.sh
 COPY ${BUILD_CONTEXT_PATH}cert[s]/* /tmp/certs/
-
-COPY ${BUILD_CONTEXT_PATH}sshd.conf /etc/sshd_config
 
 # Install packages
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
@@ -29,7 +28,6 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         procps \
         vim \
         openssh-client \
-        openssh-server \
         net-tools \
         jq \
         wget \
@@ -83,6 +81,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
     apt-get install -y --no-install-recommends \
         powershell \
         fluent-bit \
+        openssh-server \
         clickhouse-client \
         postgresql-client-${POSTGRES_VERSION:-15} && \
     ln -s /opt/fluent-bit/bin/fluent-bit /usr/local/bin/fluent-bit && \
@@ -90,13 +89,21 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* && \
     touch /etc/ssh/sshd_config.d/fieldsets.conf && \
-    echo "PORT=${SSH_PORT:-2022}" >> /etc/ssh/sshd_config.d/fieldsets.conf
+    echo "Port ${SSH_PORT:-1022}" >> /etc/ssh/sshd_config.d/fieldsets.conf
+
+# These can take a while to install so we move the calls into a new layer in case of build failures
+RUN /usr/bin/pwsh -NoLogo -NonInteractive -Command "& {Install-Package Npgsql -Source NuGet.org -Scope AllUsers -Force}" && \
+    /usr/bin/pwsh -NoLogo -NonInteractive -Command "& {Install-Package ClickHouse.Client -Source NuGet.org -Scope AllUsers -Force}" && \
+    /usr/bin/pwsh -NoLogo -NonInteractive -Command "& {Install-Package Microsoft.Extensions.Logging.Abstractions -RequiredVersion ${DOTNET_VERSION}.0.0 -Source NuGet.org -Scope AllUsers -Force}"
+
+COPY ${BUILD_CONTEXT_PATH}ssh.conf /etc/ssh/ssh_config
+COPY ${BUILD_CONTEXT_PATH}sshd.conf /etc/ssh/sshd_config
 
 # Add main work dir to PATH
 WORKDIR /usr/local/fieldsets
 ENV PATH="/usr/local/fieldsets/bin:${PATH}"
 
-EXPOSE ${SSH_PORT:-2022}
+EXPOSE ${SSH_PORT:-1022}
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 

@@ -1,8 +1,11 @@
 #!/usr/bin/env pwsh
 Param(
-    [Parameter(Mandatory=$false,Position=0)][String]$priority = "99",
-    [Parameter(Mandatory=$false,Position=1)][String]$phase = "run"
+    [Parameter(Mandatory=$false,Position=0)][String]$priority = "10",
+    [Parameter(Mandatory=$false,Position=1)][String]$phase = "config"
 )
+<##
+ # Config scripts are run everytime the server starts/restarts
+ ##>
 $script_token = "$($phase)-phase"
 $module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/pwsh")
 Import-Module -Function isPluginPhaseContainer, buildPluginPriortyList -Name "$($module_path)/plugins.psm1"
@@ -18,7 +21,6 @@ if (!(Test-Path -Path "$($log_path)/$($script_token).log")) {
     New-Item -Path "$($log_path)" -Name "$($script_token).log" -ItemType File | Out-Null
 }
 
-# Create a Powershell session which all of our framework code will be executed in.
 foreach ($plugin_dirs in $plugins_priority_list.Values) {
     foreach ($plugin_dir in $plugin_dirs) {
         if ($null -ne $plugin_dir) {
@@ -34,14 +36,14 @@ foreach ($plugin_dirs in $plugins_priority_list.Values) {
                         RedirectStandardError = "/dev/tty"
                         RedirectStandardOutput = "$($log_path)/$($script_token).log"
                     }
-                    Start-Process @processOptions
+                    Start-Process @processOptions  -Wait
                 }
             }
         }
     }
 }
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token, "User")
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority, "User")
 
+[System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token)
+[System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority)
 Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
 Exit
