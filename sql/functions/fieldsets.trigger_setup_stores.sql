@@ -6,6 +6,7 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
   DECLARE
     clickhouse_sql_stmt TEXT;
     sql_stmt TEXT;
+    conditional_sql TEXT;
     store_tbl_name TEXT;
     store_col_name TEXT;
     fieldset_partition_tbl_name TEXT;
@@ -20,6 +21,7 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
     fieldset_parent_record RECORD;
     field_type_record RECORD;
     col_data_type TEXT;
+    key_name TEXT;
     partition_status RECORD;
     parent_partition_status RECORD;
     auth_string TEXT;
@@ -315,10 +317,11 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
 
         SELECT to_regclass(format('fieldsets.%I',partition_name)) INTO partition_status;
         IF partition_status IS NULL THEN
-          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) TABLESPACE %s;', partition_name, parent_partition_name, partition_ids_string, store_tbl_name);
-          EXECUTE sql_stmt;
-
-          sql_stmt := format('CREATE INDEX IF NOT EXISTS %s_type_idx ON fieldsets.%I USING btree (type);', partition_name, partition_name);
+          conditional_sql := '';
+          IF parent_partition_name = store_tbl_name THEN
+            conditional_sql := 'PARTITION BY LIST(parent)';
+          END IF;
+          sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) %s TABLESPACE %I;', partition_name, parent_partition_name, partition_ids_string, conditional_sql, store_tbl_name);
           EXECUTE sql_stmt;
         ELSE
           sql_stmt := format('ALTER TABLE fieldsets.%I DETACH PARTITION fieldsets.%I;', parent_partition_name, partition_name);
@@ -338,11 +341,16 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
             lookup_partition_name := format('%s_%s', fs.field_token, fieldset_records.store);
             SELECT to_regclass(format('fieldsets.%I',lookup_partition_name)) INTO partition_status;
             IF partition_status IS NULL THEN
-              sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) TABLESPACE %s;', lookup_partition_name, partition_name, fs.field_id::TEXT, store_tbl_name);
+              sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) TABLESPACE %I;', lookup_partition_name, partition_name, fs_id::TEXT, store_tbl_name);
               EXECUTE sql_stmt;
-              sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_id_fkey FOREIGN KEY (id) REFERENCES fieldsets.tokens(id) DEFERRABLE;', lookup_partition_name, lookup_partition_name);
+              key_name := format('%s_value_idx', partition_name);
+              sql_stmt := format('CREATE INDEX IF NOT EXISTS %I ON fieldsets.%I USING HASH (((value).%s));', key_name, partition_name, fs.type::TEXT);
               EXECUTE sql_stmt;
-              sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %s_parent_fkey FOREIGN KEY (parent) REFERENCES fieldsets.tokens(id) DEFERRABLE;', lookup_partition_name, lookup_partition_name);
+              key_name := format('%s_id_fkey', lookup_partition_name);
+              sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %I FOREIGN KEY (id) REFERENCES fieldsets.tokens(id) DEFERRABLE;', lookup_partition_name, key_name);
+              EXECUTE sql_stmt;
+              key_name := format('%s_parent_fkey', lookup_partition_name);
+              sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %I FOREIGN KEY (parent) REFERENCES fieldsets.tokens(id) DEFERRABLE;', lookup_partition_name, key_name);
               EXECUTE sql_stmt;
 
               -- @TODO: Add in foreign key to value.fieldset - the field of field_value data type.
@@ -386,6 +394,7 @@ CREATE OR REPLACE FUNCTION fieldsets.trigger_setup_stores() RETURNS trigger AS $
                 id UInt64,
                 value %s
               )
+              PRIMARY KEY value, id
               SOURCE(CLICKHOUSE(TABLE ''fieldsets.%I''))
               LAYOUT(HASHED())
               LIFETIME(0);', fs.field_token, col_data_type, lookup_partition_name);

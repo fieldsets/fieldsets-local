@@ -66,13 +66,15 @@ start() {
 
 	# Pass our entrypoint scipt directory managemnt over to powershell so we can create a persistant session
 	log "Starting Pipeline"
+	mkdir -p /data/logs/
+	mkdir -p "/usr/local/fieldsets/data/logs/${ENVIRONMENT}/fieldsets-local/"
 	LOG_PATH=$(realpath "/usr/local/fieldsets/data/logs/${ENVIRONMENT}/fieldsets-local/")
-	mkdir -p $LOG_PATH
-	if [[ ! -f "${LOG_PATH}pipeline.log" ]]; then
-		touch "${LOG_PATH}pipeline.log"
+
+	if [[ ! -f "${LOG_PATH}/pipeline.log" ]]; then
+		touch "${LOG_PATH}/pipeline.log"
 	fi
 	chmod +x /usr/local/fieldsets/bin/pipeline.sh
-	nohup /usr/local/fieldsets/bin/pipeline.sh >> /usr/local/fieldsets/data/logs/pipeline.log 2>&1 &
+	nohup /usr/local/fieldsets/bin/pipeline.sh >> ${LOGPATH}/pipeline.log 2>&1 &
 
 	# After everything has booted, run any custom scripts.
 	#for f in /docker-entrypoint-init.d/*.sh; do

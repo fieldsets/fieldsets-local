@@ -12,6 +12,8 @@ Param(
 [System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $null)
 [System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $null)
 
+Write-Host "###### BEGIN INIT PHASE ######"
+
 $module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/pwsh")
 Import-Module -Function lockfileExists, createLockfile -Name "$($module_path)/utils.psm1"
 Import-Module -Function checkDependencies, isPluginPhaseContainer, buildPluginPriortyList -Name "$($module_path)/plugins.psm1"
@@ -102,13 +104,16 @@ if ($dependencies_met) {
                         if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
                             Set-Location -Path "$($plugin.FullName)" | Out-Null
                             chmod +x "$($plugin.FullName)/$($phase).sh" | Out-Null
+                            $stdErrLog = "/data/logs/$($script_token).stderr.log"
+                            $stdOutLog = "/data/logs/$($script_token).stdout.log"
                             $processOptions = @{
                                 Filepath = "$($plugin.FullName)/$($phase).sh"
                                 RedirectStandardInput = "/dev/null"
-                                RedirectStandardError = "/dev/tty"
-                                RedirectStandardOutput = "$($log_path)/$($script_token).log"
+                                RedirectStandardError = $stdErrLog
+                                RedirectStandardOutput = $stdOutLog
                             }
-                            Start-Process @processOptions -Wait
+                            Start-Process @processOptions  -Wait
+                            Get-Content $stdErrLog, $stdOutLog | ForEach-Object { $_ -replace '\x1b\[[0-9;]*m','' } | Out-File "$($log_path)/$($script_token).log" -Append
                             createLockfile -lockfile "$($lockfile)" -lockfile_path "$($lockfile_path)/$($phase)" | Out-Null
                         }
                     }
@@ -124,4 +129,6 @@ if ($dependencies_met) {
     }
 }
 Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
+
+Write-Host "###### END INIT PHASE ######"
 Exit

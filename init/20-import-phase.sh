@@ -4,6 +4,8 @@ Param(
     [Parameter(Mandatory=$false,Position=1)][String]$phase = "import"
 )
 $script_token = "$($phase)-phase"
+Write-Host "###### BEGIN IMPORT PHASE ######"
+
 $module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/pwsh")
 Import-Module -Function lockfileExists, createLockfile -Name "$($module_path)/utils.psm1"
 Import-Module -Function isPluginPhaseContainer, buildPluginPriortyList -Name "$($module_path)/plugins.psm1"
@@ -136,6 +138,19 @@ if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
 
 $db_connection.Close()
 
+# Import any predefined schemas and data
+$db_connection.Open()
+$db_command = $db_connection.CreateCommand()
+
+$db_command.CommandText = "CALL fieldsets.import_json_schemas();"
+$db_command.ExecuteNonQuery() | Out-Null
+
+$db_command.CommandText = "CALL fieldsets.import_json_data();"
+$db_command.ExecuteNonQuery() | Out-Null
+
+$db_connection.Close()
+
+
 # Execute plugin import phase scripts
 $plugins_priority_list = buildPluginPriortyList
 foreach ($plugin_dirs in $plugins_priority_list.Values) {
@@ -147,13 +162,16 @@ foreach ($plugin_dirs in $plugins_priority_list.Values) {
                 if (Test-Path -Path "$($plugin.FullName)/$($phase).sh") {
                     Set-Location -Path "$($plugin.FullName)" | Out-Null
                     chmod +x "$($plugin.FullName)/$($phase).sh" | Out-Null
+                    $stdErrLog = "/data/logs/$($script_token).stderr.log"
+                    $stdOutLog = "/data/logs/$($script_token).stdout.log"
                     $processOptions = @{
                         Filepath = "$($plugin.FullName)/$($phase).sh"
                         RedirectStandardInput = "/dev/null"
-                        RedirectStandardError = "/dev/tty"
-                        RedirectStandardOutput = "$($log_path)/$($script_token).log"
+                        RedirectStandardError = $stdErrLog
+                        RedirectStandardOutput = $stdOutLog
                     }
                     Start-Process @processOptions  -Wait
+                    Get-Content $stdErrLog, $stdOutLog | ForEach-Object { $_ -replace '\x1b\[[0-9;]*m','' } | Out-File "$($log_path)/$($script_token).log" -Append
                 }
             }
         }
@@ -171,7 +189,9 @@ $db_command.ExecuteNonQuery() | Out-Null
 
 $db_connection.Close()
 
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token, "User")
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority, "User")
+[System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token)
+[System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority)
 Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
+
+Write-Host "###### END IMPORT PHASE ######"
 Exit

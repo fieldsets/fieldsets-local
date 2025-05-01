@@ -4,6 +4,8 @@ Param(
     [Parameter(Mandatory=$false,Position=1)][String]$phase = "run"
 )
 $script_token = "$($phase)-phase"
+Write-Host "###### BEGIN RUN PHASE ######"
+
 $module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/pwsh")
 Import-Module -Function isPluginPhaseContainer, buildPluginPriortyList -Name "$($module_path)/plugins.psm1"
 
@@ -28,20 +30,23 @@ foreach ($plugin_dirs in $plugins_priority_list.Values) {
                 if (Test-Path -Path "$($plugin.FullName)/$($phase).sh") {
                     Set-Location -Path "$($plugin.FullName)" | Out-Null
                     chmod +x "$($plugin.FullName)/$($phase).sh" | Out-Null
+                    $stdErrLog = "/data/logs/$($script_token).stderr.log"
+                    $stdOutLog = "/data/logs/$($script_token).stdout.log"
                     $processOptions = @{
                         Filepath = "$($plugin.FullName)/$($phase).sh"
                         RedirectStandardInput = "/dev/null"
-                        RedirectStandardError = "/dev/tty"
-                        RedirectStandardOutput = "$($log_path)/$($script_token).log"
+                        RedirectStandardError = $stdErrLog
+                        RedirectStandardOutput = $stdOutLog
                     }
                     Start-Process @processOptions
+                    Get-Content $stdErrLog, $stdOutLog | ForEach-Object { $_ -replace '\x1b\[[0-9;]*m','' } | Out-File "$($log_path)/$($script_token).log" -Append
                 }
             }
         }
     }
 }
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token, "User")
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority, "User")
+[System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token)
+[System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority)
 
 Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
 Exit
