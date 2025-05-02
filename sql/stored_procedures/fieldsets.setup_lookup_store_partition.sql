@@ -16,6 +16,7 @@ DECLARE
     partition_status RECORD;
     partition_ids_string TEXT;
     lookup_partition_name TEXT;
+    view_name TEXT;
     fs_id BIGINT;
     fs RECORD;
     key_name TEXT;
@@ -50,7 +51,7 @@ BEGIN
     END IF;
 
     partition_ids_string := array_to_string(partition_ids,',');
-    partition_name := format('%s_%s', set_token, store_token);
+    partition_name := format('__%s_%s', set_token, store_token);
 
     SELECT to_regclass(format('fieldsets.%I',partition_name)) INTO partition_status;
     IF partition_status IS NULL THEN
@@ -75,13 +76,13 @@ BEGIN
         IF fs IS NOT NULL THEN
         partition_status := NULL;
         SELECT fieldsets.get_field_data_type(fs.type::TEXT) INTO col_data_type;
-        lookup_partition_name := format('%s_%s', fs.field_token, store_token);
+        lookup_partition_name := format('__%s_%s', fs.field_token, store_token);
         SELECT to_regclass(format('fieldsets.%I',lookup_partition_name)) INTO partition_status;
         IF partition_status IS NULL THEN
             sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) TABLESPACE %I;', lookup_partition_name, partition_name, fs_id::TEXT, store_tbl_name);
             EXECUTE sql_stmt;
-            key_name := format('%s_value_idx', partition_name);
-            sql_stmt := format('CREATE INDEX IF NOT EXISTS %I ON fieldsets.%I USING HASH (((value).%s));', key_name, partition_name, fs.type::TEXT);
+            key_name := format('%s_value_idx', lookup_partition_name);
+            sql_stmt := format('CREATE INDEX IF NOT EXISTS %I ON fieldsets.%I USING HASH (((value).%s));', key_name, lookup_partition_name, fs.type::TEXT);
             EXECUTE sql_stmt;
             key_name := format('%s_id_fkey', lookup_partition_name);
             sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %I FOREIGN KEY (id) REFERENCES fieldsets.tokens(id) DEFERRABLE;', lookup_partition_name, key_name);
@@ -90,10 +91,17 @@ BEGIN
             sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %I FOREIGN KEY (parent) REFERENCES fieldsets.tokens(id) DEFERRABLE;', lookup_partition_name, key_name);
             EXECUTE sql_stmt;
 
-            -- @TODO: Add in foreign key to value.fieldset - the field of field_value data type.
-            --IF fs.type::TEXT = 'fieldset'::TEXT THEN
-            --EXECUTE sql_stmt;
-            --END IF;
+            /*
+            IF fs.type::TEXT = 'fieldset'::TEXT THEN
+            key_name := format('%s_value_fkey', lookup_partition_name);
+            sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %I FOREIGN KEY (((value).%s)) REFERENCES fieldsets.tokens(id) DEFERRABLE;', lookup_partition_name, key_name, fs.type::TEXT);
+            EXECUTE sql_stmt;
+            END IF;
+            */
+
+            view_name := format('%s_%s', fs.field_token, store_token);
+            sql_stmt := format('CREATE OR REPLACE VIEW fieldsets.%I AS SELECT id, parent, (value).%s AS value, created, updated FROM fieldsets.%I;', view_name, fs.type::TEXT, lookup_partition_name);
+            EXECUTE sql_stmt;
             /**
             * Create A clickhouse dictionary for our lookup.
             */
@@ -102,29 +110,13 @@ BEGIN
             clickhouse_sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I (
             id UInt64,
             parent UInt64,
-            value Nested(
-                fieldset UInt64,
-                string String,
-                number Int64,
-                decimal Decimal,
-                object String,
-                list Array(Nullable(String)),
-                array Array(Nullable(Decimal)),
-                vector Array(Nullable(String)),
-                bool Boolean,
-                date Date,
-                ts DateTime,
-                search String,
-                uuid UUID,
-                function String,
-                enum String,
-                custom String,
-                any String
-            )
+            value %s,
+            created DateTime,
+            updated DateTime
             ) ENGINE = PostgreSQL(
                 %s,
                 table = %L
-            );', lookup_partition_name, 'postgres_connection', lookup_partition_name);
+            );', lookup_partition_name, col_data_type, 'postgres_connection', lookup_partition_name);
             sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);
             EXECUTE sql_stmt;
             clickhouse_sql_stmt := format('CREATE OR REPLACE DICTIONARY IF NOT EXISTS fieldsets.%I_dict (
@@ -137,13 +129,15 @@ BEGIN
             LIFETIME(0);', fs.field_token, col_data_type, lookup_partition_name);
             sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);
             EXECUTE sql_stmt;
+            /*
             clickhouse_sql_stmt := format('CREATE MATERIALIZED VIEW IF NOT EXISTS fieldsets.%I
             TO fieldsets.%I_dict AS
             SELECT id,
-                value.%s AS value
+                value
             FROM fieldsets.%I;', fs.field_token, fs.field_token, fs.type::TEXT, lookup_partition_name);
             sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);
             EXECUTE sql_stmt;
+            */
         END IF;
         END IF;
     END LOOP;

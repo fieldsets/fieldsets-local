@@ -89,22 +89,6 @@ if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
 }
 
 <##
- # Create functions
- ##>
-$lockfile = "$($priority)-create-functions.complete"
-if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
-    $sql_stmt_files = Get-Item -Path "/usr/local/fieldsets/sql/functions/*.sql" | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
-    foreach ($sql_file in $sql_stmt_files) {
-        $db_command.CommandText = Get-Content -Raw -Path "$($sql_file.FullName)"
-        if ("$($db_command.CommandText)".Length -gt 0) {
-            $db_command.ExecuteNonQuery() | Out-Null
-        }
-    }
-    createLockfile -lockfile "$($lockfile)" -lockfile_path "$($lockfile_path)/$($phase)" | Out-Null
-    Write-Output "Functions Created."
-}
-
-<##
  # Create Stored Procedures
  ##>
 $lockfile = "$($priority)-create-stored-procedures.complete"
@@ -118,6 +102,22 @@ if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
     }
     createLockfile -lockfile "$($lockfile)" -lockfile_path "$($lockfile_path)/$($phase)" | Out-Null
     Write-Output "Stored Procedures Created."
+}
+
+<##
+ # Create functions
+ ##>
+$lockfile = "$($priority)-create-functions.complete"
+if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
+    $sql_stmt_files = Get-Item -Path "/usr/local/fieldsets/sql/functions/*.sql" | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
+    foreach ($sql_file in $sql_stmt_files) {
+        $db_command.CommandText = Get-Content -Raw -Path "$($sql_file.FullName)"
+        if ("$($db_command.CommandText)".Length -gt 0) {
+            $db_command.ExecuteNonQuery() | Out-Null
+        }
+    }
+    createLockfile -lockfile "$($lockfile)" -lockfile_path "$($lockfile_path)/$($phase)" | Out-Null
+    Write-Output "Functions Created."
 }
 
 <##
