@@ -1,9 +1,9 @@
 /**
- * setup_filter_store_partition: Create filter partition tables for a given fieldset.
- * @param TEXT: fs_token
- * @param FIELDSET_RECORDS[]: fs_records
+ * setup_filter_store: Takes a fieldset token and associated ids and creates partitions for the given STORE_TYPE.
+ * @param FIELDSET_RECORD: fs_record
+ * @param FIELDSET_RECORD[]: fs_child_records
  **/
-CREATE OR REPLACE PROCEDURE fieldsets.setup_filter_store_partition(fs_token TEXT, fs_records FIELDSET_RECORD[]) AS $procedure$
+CREATE OR REPLACE PROCEDURE fieldsets.setup_filter_store(fs_record FIELDSET_RECORD, fs_child_records FIELDSET_RECORD[]) AS $procedure$
 DECLARE
     store_token TEXT;
     store_tbl_name TEXT;
@@ -14,22 +14,24 @@ DECLARE
     partition_status RECORD;
     partition_ids BIGINT[];
     partition_ids_string TEXT;
-    fs_id BIGINT;
     fs FIELDSET_RECORD;
+    fs_token TEXT;
     key_name TEXT;
     col_data_type TEXT;
     sql_stmt TEXT;
 BEGIN
     store_token := 'filter';
     store_tbl_name := 'filters';
-    SELECT array_agg(DISTINCT id) INTO partition_ids FROM unnest(fs_records) AS fs_record(id BIGINT);
+    fs_token := fs_record.token;
+    fieldset_parent_token := fs_record.parent_token;
 
-    SELECT parent_token INTO fieldset_parent_token FROM fieldsets.fieldsets WHERE token = fs_token;
+    SELECT array_agg(DISTINCT id) INTO partition_ids FROM unnest(fs_child_records);
+    
     IF fieldset_parent_token = 'fieldset' OR fieldset_parent_token IS NULL THEN
         parent_partition_name := store_tbl_name;
     ELSE
         parent_partition_name := format('%s_%s', fieldset_parent_token, store_token);
-        SELECT to_regclass(format('fieldsets.%I',parent_partition_name)) INTO parent_partition_status;
+        SELECT to_regclass(format('fieldsets.%I', parent_partition_name)) INTO parent_partition_status;
         IF parent_partition_status IS NULL THEN
             parent_partition_name := store_tbl_name;
         END IF;
@@ -38,7 +40,7 @@ BEGIN
     partition_ids_string := array_to_string(partition_ids,',');
     partition_name := format('%s_%s', fs_token, store_token);
 
-    SELECT to_regclass(format('fieldsets.%I',partition_name)) INTO partition_status;
+    SELECT to_regclass(format('fieldsets.%I', partition_name)) INTO partition_status;
     IF partition_status IS NULL THEN
 
         key_name := format('%s_parent_chk', partition_name);
@@ -66,10 +68,9 @@ BEGIN
         EXECUTE sql_stmt;
     END IF;
 
-    FOREACH fs IN fs_records
+    FOREACH fs IN ARRAY fs_child_records
     LOOP
         IF fs IS NOT NULL THEN
-            fs_id := fs.id;
             SELECT fieldsets.get_field_data_type(fs.type::TEXT) INTO col_data_type;
             sql_stmt := format('ALTER TABLE fieldsets.%I ADD COLUMN IF NOT EXISTS %s %s;', partition_name, fs.token, col_data_type);
             EXECUTE sql_stmt;
@@ -84,9 +85,9 @@ BEGIN
 END;
 $procedure$ LANGUAGE plpgsql;
 
-COMMENT ON PROCEDURE fieldsets.setup_filter_store_partition(TEXT,FIELDSET_RECORD[]) IS
+COMMENT ON PROCEDURE fieldsets.setup_filter_store(FIELDSET_RECORD,FIELDSET_RECORD[]) IS
 '/**
- * setup_filter_store_partition: Create filter partition tables for a given fieldset.
- * @param TEXT: fs_token
- * @param FIELDSET_RECORDS[]: fs_records
+ * setup_filter_store: Takes a fieldset token and associated ids and creates partitions for the given STORE_TYPE.
+ * @param FIELDSET_RECORD: fs_record
+ * @param FIELDSET_RECORD[]: fs_child_records
  **/';
