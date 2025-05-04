@@ -1,24 +1,23 @@
 /**
- * setup_lookup_store_partition: takes a table name and generates a given number of subpartitions for all enumerated STORE_TYPEs.
- * @param TEXT: set_token
- * @param BIGINT[]: partition_ids
+ * setup_lookup_store: Takes a fieldset token and associated ids and creates partitions for the given STORE_TYPE.
+ * @param FIELDSET_RECORD: fs_record
+ * @param FIELDSET_RECORD[]: fs_child_records
  **/
-CREATE OR REPLACE PROCEDURE fieldsets.setup_lookup_store_partition(set_token TEXT, partition_ids BIGINT[], fs_tbl REGCLASS) AS $procedure$
+CREATE OR REPLACE PROCEDURE fieldsets.setup_lookup_store(fs_record FIELDSET_RECORD, fs_child_records FIELDSET_RECORD[]) AS $procedure$
 DECLARE
     store_token TEXT;
     store_tbl_name TEXT;
-    fieldset_parent_record RECORD;
     fieldset_parent_token TEXT;
     fieldset_parent_id BIGINT;
     parent_partition_name TEXT;
     parent_partition_status RECORD;
     partition_name TEXT;
     partition_status RECORD;
+    partition_ids BIGINT[];
     partition_ids_string TEXT;
     lookup_partition_name TEXT;
     view_name TEXT;
-    fs_id BIGINT;
-    fs RECORD;
+    fs FIELDSET_RECORD;
     key_name TEXT;
     col_data_type TEXT;
     sql_stmt TEXT;
@@ -29,14 +28,14 @@ BEGIN
     store_token := 'lookup';
    	store_tbl_name := 'lookups';
 
-    SELECT id,token,parent,parent_token,set_id,set_token,field_id,field_token,type,store INTO fieldset_parent_record
-    FROM fieldsets.fieldsets
-    WHERE token = set_token;
+    SELECT fieldsets.get_clickhouse_auth_string() INTO auth_string;
 
-    fieldset_parent_token := fieldset_parent_record.parent_token;
-    fieldset_parent_id := fieldset_parent_record.parent;
+    SELECT array_agg(DISTINCT id) INTO partition_ids FROM unnest(fs_child_records);
 
-    --IF fieldset_parent_record.parent <> fieldset_parent_record.id THEN
+    fieldset_parent_token := fs_record.parent_token;
+    fieldset_parent_id := fs_record.parent;
+
+    --IF fs_record.parent <> fs_record.id THEN
     --  partition_ids := array_remove(partition_ids,fieldset_parent_id);
     --END IF;
 
@@ -51,7 +50,7 @@ BEGIN
     END IF;
 
     partition_ids_string := array_to_string(partition_ids,',');
-    partition_name := format('__%s_%s', set_token, store_token);
+    partition_name := format('__%s_%s', fs_record.token, store_token);
 
     SELECT to_regclass(format('fieldsets.%I',partition_name)) INTO partition_status;
     IF partition_status IS NULL THEN
@@ -70,16 +69,15 @@ BEGIN
     /*
         * Create a partitions for the lookup fields
         */
-    FOREACH fs_id IN ARRAY partition_ids
+    FOREACH fs IN ARRAY fs_child_records
     LOOP
-        SELECT token, type, field_id, field_token INTO fs FROM fs_tbl WHERE id = fs_id;
         IF fs IS NOT NULL THEN
         partition_status := NULL;
         SELECT fieldsets.get_field_data_type(fs.type::TEXT) INTO col_data_type;
         lookup_partition_name := format('__%s_%s', fs.field_token, store_token);
         SELECT to_regclass(format('fieldsets.%I',lookup_partition_name)) INTO partition_status;
         IF partition_status IS NULL THEN
-            sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) TABLESPACE %I;', lookup_partition_name, partition_name, fs_id::TEXT, store_tbl_name);
+            sql_stmt := format('CREATE TABLE IF NOT EXISTS fieldsets.%I PARTITION OF fieldsets.%I FOR VALUES IN(%s) TABLESPACE %I;', lookup_partition_name, partition_name, fs.id::TEXT, store_tbl_name);
             EXECUTE sql_stmt;
             key_name := format('%s_value_idx', lookup_partition_name);
             sql_stmt := format('CREATE INDEX IF NOT EXISTS %I ON fieldsets.%I USING HASH (((value).%s));', key_name, lookup_partition_name, fs.type::TEXT);
@@ -93,9 +91,9 @@ BEGIN
 
             /*
             IF fs.type::TEXT = 'fieldset'::TEXT THEN
-            key_name := format('%s_value_fkey', lookup_partition_name);
-            sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %I FOREIGN KEY (((value).%s)) REFERENCES fieldsets.tokens(id) DEFERRABLE;', lookup_partition_name, key_name, fs.type::TEXT);
-            EXECUTE sql_stmt;
+                key_name := format('%s_value_fkey', lookup_partition_name);
+                sql_stmt := format('ALTER TABLE fieldsets.%I ADD CONSTRAINT %I FOREIGN KEY (((value).%s)) REFERENCES fieldsets.tokens(id) DEFERRABLE;', lookup_partition_name, key_name, fs.type::TEXT);
+                EXECUTE sql_stmt;
             END IF;
             */
 
@@ -144,10 +142,9 @@ BEGIN
 END;
 $procedure$ LANGUAGE plpgsql;
 
-COMMENT ON PROCEDURE fieldsets.setup_lookup_store_partition(TEXT,BIGINT[],REGCLASS) IS
+COMMENT ON PROCEDURE fieldsets.setup_lookup_store(FIELDSET_RECORD,FIELDSET_RECORD[]) IS
 '/**
- * setup_lookup_store_partition: takes a table name and generates a given number of subpartitions for all enumerated STORE_TYPEs.
- * @param TEXT: parent_partition (optional -default "fieldsets")
- * @param TEXT: parent_token (optional -default "fieldset")
- * @param TEXT: table_space (optional -default "fieldsets")
+ * setup_lookup_store: Takes a fieldset token and associated ids and creates partitions for the given STORE_TYPE.
+ * @param FIELDSET_RECORD: fs_record
+ * @param FIELDSET_RECORD[]: fs_child_records
  **/';
