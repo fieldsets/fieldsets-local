@@ -1,8 +1,9 @@
 /**
  * get_field_data_type: Input a data value and the corresponding FIELD_TYPE and return the SQL representation of its FIELD_VALUE.
+ *      Overwrite function to encompass clickhouse data types.
  * @param TEXT: field_type
  * @param TEXT: engine (clickhouse, postgresql)
- * @return ANY: BIGINT,TEXT,BIGINT,DECIMAL,JSONB,TEXT[],JSONB[],DECIMAL[],BOOLEAN,DATE,TIMESTAMP,TSVECTOR,UUID,JSONB,TEXT,JSONB,JSONB
+ * @return ANY: BIGINT,TEXT,BIGINT,DECIMAL,JSONB,TEXT[],BIGINT[],DECIMAL[],BOOLEAN,DATE,TIMESTAMP,TSVECTOR,UUID,JSONB,TEXT,JSONB,JSONB
  **/
 CREATE OR REPLACE FUNCTION fieldsets.get_field_data_type(field_type TEXT, engine TEXT = 'postgres')
 RETURNS TEXT
@@ -47,9 +48,9 @@ AS $function$
                 END IF;
             WHEN 'array' THEN
                 IF engine = 'clickhouse' THEN
-                    RETURN 'Array(Nullable(String))';
+                    RETURN 'Array(Nullable(UInt64))';
                 ELSE
-                    RETURN 'JSONB[]';
+                    RETURN 'BIGINT[]';
                 END IF;
             WHEN 'vector' THEN
                 IF engine = 'clickhouse' THEN
@@ -124,7 +125,8 @@ $function$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION fieldsets.get_field_data_type(TEXT,TEXT) IS
 '/**
  * get_field_data_type: Input a data value and the corresponding FIELD_TYPE and return the SQL representation of its FIELD_VALUE.
+ *      Overwrite function to encompass clickhouse data types.
  * @param TEXT: field_type
  * @param TEXT: engine (clickhouse, postgresql)
- * @return ANY: BIGINT,TEXT,BIGINT,DECIMAL,JSONB,TEXT[],JSONB[],DECIMAL[],BOOLEAN,DATE,TIMESTAMP,TSVECTOR,UUID,JSONB,TEXT,JSONB,JSONB
+ * @return ANY: BIGINT,TEXT,BIGINT,DECIMAL,JSONB,TEXT[],BIGINT[],DECIMAL[],BOOLEAN,DATE,TIMESTAMP,TSVECTOR,UUID,JSONB,TEXT,JSONB,JSONB
  **/';
