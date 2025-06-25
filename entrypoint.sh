@@ -61,6 +61,7 @@ start() {
 
     ssh-keygen -f "${SESSION_KEY_PATH}/known_hosts" -R "[${FIELDSETS_LOCAL_HOST}]:${SSH_PORT}"
     service ssh start
+    service memcached start
 
     #make sure our scripts are flagged at executable.
     chmod +x /docker-entrypoint-init.d/*.sh

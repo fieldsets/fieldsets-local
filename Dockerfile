@@ -63,6 +63,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         groff \
         libpq5 \
         libpq-dev \
+        memcached \
+        libmemcached-tools \
         unzip && \
     bash /root/.local/bin/root-certs.sh /tmp/certs/ && \
     install -d /usr/share/postgresql-common/pgdg && \

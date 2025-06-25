@@ -68,25 +68,25 @@ if (!(Test-Path -Path "$($log_path)/$($script_token).log")) {
 
 # Install dependencies
 # Check if we are using the default memcached cache and install if necessary.
-Write-Host $cache_type
-if ($cache_type -eq 'memcached') {
-    $lockfile = "$($priority)-$($cache_type).$($phase).complete"
-    if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
-        $stdErrLog = "/data/logs/$($cache_type).stderr.log"
-        $stdOutLog = "/data/logs/$($cache_type).stdout.log"
-        $processOptions = @{
-            Filepath = "apt-get"
-            ArgumentList = "install -y --no-install-recommends memcached libmemcached-tools"
-            RedirectStandardInput = "/dev/null"
-            RedirectStandardError = $stdErrLog
-            RedirectStandardOutput = $stdOutLog
-        }
-        Start-Process @processOptions -Wait
-        Get-Content $stdErrLog, $stdOutLog | ForEach-Object { $_ -replace '\x1b\[[0-9;]*m','' } | Out-File "$($log_path)/$($script_token).log" -Append
+#Write-Host $cache_type
+#if ($cache_type -eq 'memcached') {
+#    $lockfile = "$($priority)-$($cache_type).$($phase).complete"
+#    if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
+#        $stdErrLog = "/data/logs/$($cache_type).stderr.log"
+#        $stdOutLog = "/data/logs/$($cache_type).stdout.log"
+#        $processOptions = @{
+#            Filepath = "apt-get"
+#            ArgumentList = "install -y --no-install-recommends memcached libmemcached-tools"
+#            RedirectStandardInput = "/dev/null"
+#            RedirectStandardError = $stdErrLog
+#            RedirectStandardOutput = $stdOutLog
+#        }
+#        Start-Process @processOptions -Wait
+#        Get-Content $stdErrLog, $stdOutLog | ForEach-Object { $_ -replace '\x1b\[[0-9;]*m','' } | Out-File "$($log_path)/$($script_token).log" -Append
 
-        createLockfile -lockfile "$($lockfile)" -lockfile_path "$($lockfile_path)/$($phase)" | Out-Null
-    }
-}
+#        createLockfile -lockfile "$($lockfile)" -lockfile_path "$($lockfile_path)/$($phase)" | Out-Null
+#    }
+#}
 
 # Install libraries
 try {

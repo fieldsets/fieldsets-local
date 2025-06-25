@@ -10,7 +10,7 @@ function getFieldType {
         ({
             ($_ -eq 'hashtable') -or
             ($_ -eq 'object') -or
-            ($_ -eq 'drdereddictionary') -or
+            ($_ -eq 'ordereddictionary') -or
             ($_ -eq 'dictionary')
         }) {
             $field_type_id = 6
@@ -244,6 +244,18 @@ function session_cache_flush {
 }
 
 
+$fieldsets_local_host = [System.Environment]::GetEnvironmentVariable('FIELDSETS_LOCAL_HOST')
+$home_path = [System.Environment]::GetEnvironmentVariable('HOME')
+$session_port = [System.Environment]::GetEnvironmentVariable('SSH_PORT')
+$ssh_key_path = [System.Environment]::GetEnvironmentVariable('SSH_KEY_PATH')
+$session_key = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_KEY')
+if ($ssh_key_path.StartsWith('~')) {
+    $ssh_key_path = $ssh_key_path.Replace('~', "$($home_path)")
+}
+$session_key_path = [System.IO.Path]::GetFullPath((Join-Path -Path $ssh_key_path -ChildPath $session_key))
+
+
+Enter-PSSession -HostName $fieldsets_local_host -Options @{StrictHostKeyChecking='no'} -Port $session_port -KeyFilePath $session_key_path
 #session_cache_delete -key 'fieldsets_session_cache'
 
 #session_cache_flush
@@ -257,5 +269,7 @@ session_cache_set -key 'mykey' -value 4.3212
 $value_check = session_cache_get -key 'mykey'
 
 Write-Output $value_check
+
+Exit-PSSession
 
 Exit
