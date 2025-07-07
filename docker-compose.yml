@@ -19,12 +19,15 @@ services:
             FIELDSETS_INFRASTRUCTURE_ROLE: ${FIELDSETS_INFRASTRUCTURE_ROLE:-node}
             SSH_KEY_PATH: ${SSH_KEY_PATH:-~/.ssh/}
             SSH_PORT: ${SSH_PORT:-1022}
-            FIELDSETS_SESSION_KEY: ${FIELDSETS_SESSION_KEY:-fieldsets_rsa}
             PLUGINS_PATH: "/usr/local/fieldsets/plugins/"
             LIB_PATH: "/usr/local/fieldsets/lib/"
             APPS_PATH: "/usr/local/fieldsets/apps/"
             DATA_PATH: "/usr/local/fieldsets/data/"
             FIELDSETS_LOCAL_HOST: ${FIELDSETS_LOCAL_HOST:-172.28.0.6}
+            FIELDSETS_SESSION_HOST: ${FIELDSETS_SESSION_HOST:-${FIELDSETS_LOCAL_HOST:-172.28.0.6}}
+            FIELDSETS_SESSION_PORT: ${FIELDSETS_SESSION_PORT:-${SSH_PORT:-1022}}
+            FIELDSETS_SESSION_KEY: ${FIELDSETS_SESSION_KEY:-fieldsets_rsa}
+            FIELDSETS_SESSION_KEY_PATH: ${FIELDSETS_SESSION_KEY_PATH:-${SSH_KEY_PATH:-1022}}
             FIELDSETS_LOCAL_VERSION: ${FIELDSETS_LOCAL_VERSION:-latest}
             PUID: ${LOCAL_UID:-1000}
             PGID: ${LOCAL_GID:-1000}
