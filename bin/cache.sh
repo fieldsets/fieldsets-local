@@ -95,7 +95,7 @@ function session_cache_connect {
     Enter-PSSession -HostName $fieldsets_session_host -Options @{StrictHostKeyChecking='no'} -Port $session_port -KeyFilePath $session_key_path
 }
 
-function session_cache_disconnect {    
+function session_cache_disconnect {
     Exit-PSSession
 }
 
@@ -129,8 +129,6 @@ function session_cache_init {
         $lines = ($encoding.GetString($buffer, 0, $read)).Trim(" ","`r","`t").Split("`n")
         foreach ($line in $lines){
             $readline_value = ("$($line)").Trim(" ","`r","`n","`t")
-
-            #Write-Output "INIT LINE: '$($readline_value)'"
             if (
                 ("$($readline_value)".Length -gt 0 ) -and
                 (!($readline_value.StartsWith('VALUE fieldsets_session_cache'))) -and
@@ -138,7 +136,7 @@ function session_cache_init {
             ) {
                 $data_value = "$($data_value)$($readline_value)"
             }
-        }        
+        }
     }
 
     if ($data_value.Length -gt 0) {
@@ -149,7 +147,7 @@ function session_cache_init {
 
 
     if ($false -eq $cache_initialized) {
-        $data_value = ConvertTo-Json -InputObject @{'initialized' = $true} -Compress
+        $data_value = ConvertTo-Json -InputObject @{'initialized' = $true} -Compress -Depth 10
         $data_value_bytes = [System.Text.Encoding]::ASCII.GetBytes($data_value)
         $command = "set fieldsets_session_cache 6 $($expires_sec) $($data_value_bytes.Length)`r`n$($data_value)`r`n"
         $writer.WriteLine($command)
@@ -184,7 +182,7 @@ function session_cache_set {
 
     $data_type = $value.GetType().Name
     $field_type = getFieldType -data_type $data_type
-    $data_value = ConvertTo-Json -InputObject $value -Compress
+    $data_value = ConvertTo-Json -InputObject $value -Compress -Depth 10
 
     $data_value_bytes = [System.Text.Encoding]::ASCII.GetBytes($data_value)
     $command = "set $($key) $($field_type[0]) $($expires_sec) $($data_value_bytes.Length)`r`n$($data_value)`r`n"
@@ -237,8 +235,7 @@ function session_cache_get {
             ) {
                 $data_value = "$($data_value)$($readline_value)"
             }
-            
-        }        
+        }
     }
 
     $socket.Close()
@@ -248,6 +245,18 @@ function session_cache_get {
     }
 
     return
+}
+
+function session_cache_key_exists {
+    Param(
+        [Parameter(Mandatory=$true)][String]$key
+    )
+    $cache_val = session_cache_get -Key "$($key)"
+    if ($null -eq $cache_val) {
+        return $false
+    } else {
+        return $true
+    }
 }
 
 function session_cache_delete {
@@ -281,7 +290,7 @@ function session_cache_flush {
     }
     $stream = $socket.GetStream()
     $writer = New-Object System.IO.StreamWriter($stream)
-    $command = "flush_all "
+    $command = "flush_all"
     $writer.WriteLine($command)
     $writer.Flush()
     # Wait for stream Write
@@ -304,16 +313,18 @@ $session_key_path = [System.IO.Path]::GetFullPath((Join-Path -Path $ssh_key_path
 
 Write-Output "Enteringing Session:"
 
-Enter-PSSession -HostName $fieldsets_cache_host -Options @{StrictHostKeyChecking='no'} -Port $session_port -KeyFilePath $session_key_path
-
-Write-Output "Using PWSH Session"
-
 #session_cache_delete -key 'fieldsets_session_cache'
 
 #session_cache_flush
 Write-Output "Initializing Session Environment:"
 
 session_cache_connect
+
+$phase_details = session_cache_get -Key 'fieldsets_pipeline_phase'
+Write-Host $phase_details
+
+
+<#
 session_cache_init | Out-Null
 Write-Output "Session Initialized"
 Write-Output "Setting Key : mykey"
@@ -332,6 +343,35 @@ $value_check = session_cache_get -key 'fieldsets_session_cache'
 Write-Output "Cache Data:"
 Write-Output $value_check
 
+
+$existing_key_check = session_cache_key_exists -key 'fieldsets_session_cache'
+Write-Output "Existing Key Value: fieldsets_session_cache"
+Write-Output $existing_key_check
+
+Write-Output "Existing Key Value: not_a_real_key"
+$nonexisting_key_check = session_cache_key_exists -key 'not_a_real_key'
+Write-Output $nonexisting_key_check
+
+Write-Output "Set Empty String for Key: empty_string_key"
+$empty_set_val = session_cache_set -key 'empty_string_key' -value ''
+Write-Output "Value is $($empty_set_val)"
+Write-Output "Existing Key with Empty String Value: empty_string_key"
+$nonexisting_key_check = session_cache_key_exists -key 'empty_string_key'
+Write-Output $nonexisting_key_check
+
+
+Write-Output "Delete Existing Key with Empty String Value: empty_string_key"
+session_cache_delete -key 'empty_string_key'
+Write-Output "Check Exist: empty_string_key"
+$nonexisting_key_check = session_cache_key_exists -key 'empty_string_key'
+Write-Output $nonexisting_key_check
+
+Write-Output "Flush All keys"
+session_cache_flush
+Write-Output "Check Exist: fieldsets_session_cache"
+$nonexisting_key_check = session_cache_key_exists -key 'fieldsets_session_cache'
+Write-Output $nonexisting_key_check
+#>
 session_cache_disconnect
 
 Exit

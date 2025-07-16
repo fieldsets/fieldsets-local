@@ -11,21 +11,19 @@ Param(
  # If you need to rerun and init script you can delete the corresponding file found in /$lockfile_path/init
  ##>
 
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $null)
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $null)
-
 Write-Host "###### BEGIN INIT PHASE ######"
 
-$module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/pwsh")
-Import-Module -Function lockfileExists, createLockfile -Name "$($module_path)/utils.psm1"
-Import-Module -Function checkDependencies, isPluginPhaseContainer, getPluginPriorityList -Name "$($module_path)/plugins.psm1"
+$module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/")
+Import-Module -Name "$($module_path)/fieldsets.psm1"
 
 $script_token = "$($phase)-phase"
 $envname = [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
 $hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
 $dotnet_ver = [System.Environment]::GetEnvironmentVariable('DOTNET_VERSION')
 
-$cache_type = [System.Environment]::GetEnvironmentVariable('FIELDSETS_CACHE')
+session_cache_connect
+[System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $null)
+[System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $null)
 
 $lockfile_path = "/usr/local/fieldsets/data/checkpoints/$($envname)/$($hostname)/phases/"
 $log_path = "/usr/local/fieldsets/data/logs/$($envname)/$($hostname)"
@@ -65,28 +63,6 @@ if (!(Test-Path -Path "$($log_path)")) {
 if (!(Test-Path -Path "$($log_path)/$($script_token).log")) {
     New-Item -Path "$($log_path)" -Name "$($script_token).log" -ItemType File | Out-Null
 }
-
-# Install dependencies
-# Check if we are using the default memcached cache and install if necessary.
-#Write-Host $cache_type
-#if ($cache_type -eq 'memcached') {
-#    $lockfile = "$($priority)-$($cache_type).$($phase).complete"
-#    if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
-#        $stdErrLog = "/data/logs/$($cache_type).stderr.log"
-#        $stdOutLog = "/data/logs/$($cache_type).stdout.log"
-#        $processOptions = @{
-#            Filepath = "apt-get"
-#            ArgumentList = "install -y --no-install-recommends memcached libmemcached-tools"
-#            RedirectStandardInput = "/dev/null"
-#            RedirectStandardError = $stdErrLog
-#            RedirectStandardOutput = $stdOutLog
-#        }
-#        Start-Process @processOptions -Wait
-#        Get-Content $stdErrLog, $stdOutLog | ForEach-Object { $_ -replace '\x1b\[[0-9;]*m','' } | Out-File "$($log_path)/$($script_token).log" -Append
-
-#        createLockfile -lockfile "$($lockfile)" -lockfile_path "$($lockfile_path)/$($phase)" | Out-Null
-#    }
-#}
 
 # Install libraries
 try {
@@ -131,6 +107,7 @@ if ($dependencies_met) {
                         if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
                             Set-Location -Path "$($plugin.FullName)" | Out-Null
                             chmod +x "$($plugin.FullName)/$($phase).sh" | Out-Null
+
                             $stdErrLog = "/data/logs/$($script_token).stderr.log"
                             $stdOutLog = "/data/logs/$($script_token).stdout.log"
                             $processOptions = @{
@@ -157,5 +134,8 @@ if ($dependencies_met) {
     }
 }
 Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
-
 Write-Host "###### END INIT PHASE ######"
+
+session_cache_disconnect
+
+Exit

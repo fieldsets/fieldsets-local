@@ -53,8 +53,8 @@ if ("$($db_type)" -eq 'postgres') {
     $db_command = $db_connection.CreateCommand()
 
     <##
-    # Create Foreign Schemas
-    ##>
+     # Create Foreign Schemas
+     ##>
     $lockfile = "$($priority)-create-foreign-schemas.complete"
     if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
         # Create Local File Server for Imports for scraper outputs.
@@ -80,8 +80,8 @@ if ("$($db_type)" -eq 'postgres') {
     }
 
     <##
-    # Create Tables
-    ##>
+     # Create Tables
+     ##>
     $lockfile = "$($priority)-create-tables.complete"
     if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
         $sql_stmt_files = Get-Item -Path "/usr/local/fieldsets/sql/tables/*.sql" | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
@@ -96,8 +96,8 @@ if ("$($db_type)" -eq 'postgres') {
     }
 
     <##
-    # Create Stored Procedures
-    ##>
+     # Create Stored Procedures
+     ##>
     $lockfile = "$($priority)-create-stored-procedures.complete"
     if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
         $sql_stmt_files = Get-Item -Path "/usr/local/fieldsets/sql/stored_procedures/*.sql" | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
@@ -112,8 +112,8 @@ if ("$($db_type)" -eq 'postgres') {
     }
 
     <##
-    # Create functions
-    ##>
+     # Create functions
+     ##>
     $lockfile = "$($priority)-create-functions.complete"
     if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
         $sql_stmt_files = Get-Item -Path "/usr/local/fieldsets/sql/functions/*.sql" | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
