@@ -323,6 +323,9 @@ session_cache_connect
 $phase_details = session_cache_get -Key 'fieldsets_pipeline_phase'
 Write-Host $phase_details
 
+$priority_queue = session_cache_get -key 'fieldsets_plugin_priority'
+
+Write-Host $priority_queue
 
 <#
 session_cache_init | Out-Null

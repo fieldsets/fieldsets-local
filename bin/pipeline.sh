@@ -2,31 +2,36 @@
 
 $envname = [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
 $hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
+$session_port = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_PORT')
+$session_key = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_KEY')
+$cache_host = [System.Environment]::GetEnvironmentVariable('FIELDSETS_CACHE_HOST')
 $module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/")
 Import-Module -Name "$($module_path)/fieldsets.psm1"
 
-Write-Host "## Pipeline Initializing ##"
+addCoreHooks
+# Clobber init_phase function to add add in custom hooks pre-init phase.
+performActionHook -Name 'fieldsets_init_phase'
 
-Write-Output "## Initializing Session Cache ##"
-session_cache_connect
+Write-Host "## Pipeline Initializing ##"
+performActionHook -Name 'fieldsets_init_local_env'
+
+$hook_args = @{
+    HostName = $cache_host
+    Port = $session_port
+    Key = $session_key
+}
+$connect_info = parseDataHook -Name 'fieldsets_session_connect_info' -Data $hook_args
+
+session_connect @connect_info
+
+performActionHook -Name 'fieldsets_init_session_env'
 # Start Fresh & Flush
 # session_cache_flush
 
-$session_cache = session_cache_init
-
-Write-Output $session_cache
-
-#$is_initialized = session_cache_get -Key 'initialized' -Session ($session)
-
-#if ($is_initialized -eq $true) {
-#    Write-Output "Session cache initialized successfully."
-#    session_cache_set -Key 'current-checkpoint' -Value 'session-cache-initialized' -Session ($session)
-#} else {
-#    Write-Output "Failed to initialize session cache."
-#}
+Write-Output "## Initializing Session Cache ##"
+cache_init
 
 # Import the rest of the modules
-
 # Run through all plugins in priority order
 $phase_scripts = Get-Item -Path "/docker-entrypoint-init.d/*.sh"
 
@@ -62,8 +67,6 @@ foreach ($phase_path in $phase_scripts) {
     session_cache_set -Key 'fieldsets_pipeline_phase' -Type 'object' -Value $($phase_json)
 }
 
-$priority_queue = session_cache_get -key 'fieldsets_plugin_priority'
-
-session_cache_disconnect
+session_disconnect
 
 Exit

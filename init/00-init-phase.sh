@@ -19,9 +19,7 @@ Import-Module -Name "$($module_path)/fieldsets.psm1"
 $script_token = "$($phase)-phase"
 $envname = [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
 $hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
-$dotnet_ver = [System.Environment]::GetEnvironmentVariable('DOTNET_VERSION')
 
-session_cache_connect
 [System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $null)
 [System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $null)
 
@@ -62,31 +60,6 @@ if (!(Test-Path -Path "$($log_path)")) {
 
 if (!(Test-Path -Path "$($log_path)/$($script_token).log")) {
     New-Item -Path "$($log_path)" -Name "$($script_token).log" -ItemType File | Out-Null
-}
-
-# Install libraries
-try {
-    Get-Module -ListAvailable -Name ImportExcel
-} catch {
-    Install-Module ImportExcel -Scope AllUsers -Force -AllowClobber | Out-Null
-}
-
-try {
-    Get-Package -Name ClickHouse.Client
-} catch {
-    Install-Package ClickHouse.Client -Source NuGet.org -Scope AllUsers -Force -AllowClobber | Out-Null
-}
-
-try {
-    Get-Package -Name Npgsql | Out-Null
-} catch {
-    Install-Package Npgsql -Source NuGet.org -Scope AllUsers -Force -AllowClobber | Out-Null
-}
-
-try {
-    Get-Package -Name Microsoft.Extensions.Logging.Abstractions -RequiredVersion "$($dotnet_ver).0.0" | Out-Null
-} catch {
-    Install-Package Microsoft.Extensions.Logging.Abstractions -RequiredVersion "${DOTNET_VERSION}.0.0" -Source NuGet.org -Scope AllUsers -Force | Out-Null
 }
 
 # Check to make sure all plugin dependencies are met.
@@ -135,7 +108,5 @@ if ($dependencies_met) {
 }
 Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
 Write-Host "###### END INIT PHASE ######"
-
-session_cache_disconnect
 
 Exit
