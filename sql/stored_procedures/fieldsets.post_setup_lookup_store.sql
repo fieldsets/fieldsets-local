@@ -46,7 +46,7 @@ BEGIN
             ) ENGINE = PostgreSQL(
                 %s,
                 table = %L
-            );', lookup_partition_name, col_data_type, 'postgres_connection', lookup_partition_name);
+            );', lookup_partition_name, col_data_type, 'fieldsets_db_connection', lookup_partition_name);
             sql_stmt := format('SELECT clickhousedb_raw_query(%L,%L);', clickhouse_sql_stmt, auth_string);
             EXECUTE sql_stmt;
             clickhouse_sql_stmt := format('CREATE OR REPLACE DICTIONARY IF NOT EXISTS fieldsets.%I_dict (

@@ -13,10 +13,8 @@ Param(
 $script_token = "$($phase)-phase"
 Write-Host "###### BEGIN IMPORT PHASE ######"
 
-$module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/pwsh")
-Import-Module -Function lockfileExists, createLockfile -Name "$($module_path)/utils.psm1"
-Import-Module -Function isPluginPhaseContainer, getPluginPriorityList -Name "$($module_path)/plugins.psm1"
-Import-Module -Function getDBConnection -Name "$($module_path)/db.psm1"
+$module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib")
+Import-Module -Name "$($module_path)/fieldsets.psm1"
 
 Set-Location -Path "/usr/local/fieldsets/plugins/" | Out-Null
 # Ordered plugins by priority
@@ -33,9 +31,14 @@ if (!(Test-Path -Path "$($log_path)/$($script_token).log")) {
 $db_type = [System.Environment]::GetEnvironmentVariable('FIELDSETS_DB')
 $db_user = [System.Environment]::GetEnvironmentVariable('FIELDSETS_DB_USER')
 $db_password = [System.Environment]::GetEnvironmentVariable('FIELDSETS_DB_PASSWORD')
+$db_name = [System.Environment]::GetEnvironmentVariable('FIELDSETS_DB_NAME')
+$db_schema = [System.Environment]::GetEnvironmentVariable('FIELDSETS_DB_SCHEMA')
+$db_host = [System.Environment]::GetEnvironmentVariable('FIELDSETS_DB_HOST')
+$db_port = [System.Environment]::GetEnvironmentVariable('FIELDSETS_DB_PORT')
+$dotnet_ver = [System.Environment]::GetEnvironmentVariable('DOTNET_VERSION')
 
 $trigger_role = [System.Environment]::GetEnvironmentVariable('FIELDSETS_DB_TRIGGER_ROLE')
-$trigger_password = [System.Environment]::GetEnvironmentVariable('FIELDSETS_DB_TRIGGER_ROLE_PASSWORD')
+#$trigger_password = [System.Environment]::GetEnvironmentVariable('FIELDSETS_DB_TRIGGER_ROLE_PASSWORD')
 
 $store_type = [System.Environment]::GetEnvironmentVariable('FIELDSETS_STORE')
 $store_host = [System.Environment]::GetEnvironmentVariable('FIELDSETS_STORE_HOST')
@@ -48,7 +51,18 @@ if ("$($db_type)" -eq 'postgres') {
     [System.Environment]::SetEnvironmentVariable('PGUSER', $db_user) | Out-Null
     [System.Environment]::SetEnvironmentVariable('PGPASSWORD', $db_password) | Out-Null
 
-    $db_connection = getDBConnection
+    $db_credentials = @{
+        type = $db_type
+        dbname = $db_name
+        hostname = $db_host
+        schema = $db_schema
+        port = $db_port
+        user = $db_user
+        password = $db_password
+        dotnet_ver = $dotnet_ver
+    }
+    $db_connection_info = parseDataHook -Name 'fieldsets_db_connect_info' -Data $db_credentials
+    $db_connection = getDBConnection @db_connection_info
     $db_connection.Open()
     $db_command = $db_connection.CreateCommand()
 
@@ -170,7 +184,7 @@ foreach ($plugin_dirs in $plugins_priority_list.Values) {
         if ($null -ne $plugin_dir) {
             $plugin = Get-Item -Path "$($plugin_dir)" | Select-Object FullName, Name, BaseName, LastWriteTime, CreationTime
             if (isPluginPhaseContainer -plugin "$($plugin.BaseName)") {
-                Write-Host "Pre $($phase) phase for plugin: $($plugin.BaseName)"
+                Write-Host "$($phase) phase for plugin: $($plugin.BaseName)"
                 if (Test-Path -Path "$($plugin.FullName)/$($phase).sh") {
                     $lockfile = "$($priority)-plugin-$($plugin.Name).$($phase).complete"
                     if (! (lockfileExists "$($lockfile_path)/$($phase)/$($lockfile)")) {
@@ -209,8 +223,7 @@ if ("$($db_type)" -eq 'postgres') {
     $db_connection.Close()
 }
 
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token)
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority)
 Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
 
 Write-Host "###### END IMPORT PHASE ######"
+Exit

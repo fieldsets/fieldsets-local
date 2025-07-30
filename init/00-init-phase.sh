@@ -99,8 +99,6 @@ if ($dependencies_met) {
             }
         }
     }
-    [System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token)
-    [System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority)
 } else {
     if ($false -eq $dependencies_met) {
         Throw "Missing Dependencies"
