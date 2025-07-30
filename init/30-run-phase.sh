@@ -1,17 +1,17 @@
 #!/usr/bin/env pwsh
 Param(
-    [Parameter(Mandatory=$false,Position=0)][String]$priority = "99",
-    [Parameter(Mandatory=$false,Position=1)][String]$phase = "run"
+    [Parameter(Mandatory=$false)][String]$priority = "30",
+    [Parameter(Mandatory=$false)][String]$phase = "run"
 )
 $script_token = "$($phase)-phase"
 Write-Host "###### BEGIN RUN PHASE ######"
 
-$module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/pwsh")
-Import-Module -Function isPluginPhaseContainer, buildPluginPriortyList -Name "$($module_path)/plugins.psm1"
+$module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib")
+Import-Module -Name "$($module_path)/fieldsets.psm1"
 
 Set-Location -Path "/usr/local/fieldsets/plugins/" | Out-Null
 # Ordered plugins by priority
-$plugins_priority_list = buildPluginPriortyList
+$plugins_priority_list = getPluginPriorityList
 $envname = [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
 $hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
 $log_path = "/usr/local/fieldsets/data/logs/$($envname)/$($hostname)"
@@ -45,8 +45,5 @@ foreach ($plugin_dirs in $plugins_priority_list.Values) {
         }
     }
 }
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $script_token)
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $priority)
-
 Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
 Exit

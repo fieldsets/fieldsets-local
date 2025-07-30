@@ -118,4 +118,4 @@ Currently this pipeline expects a PostgreSQL instance to be specified. If you wa
 ### PostgreSQL
 Any GUI with a TCP connection on port 8123 can connect locally to [http://0.0.0.0:5432](http://0.0.0.0:5432). A personal preference is for [DBeaver](https://dbeaver.io/download/). But Fieldsets also utilizes [Postico](https://fieldsetsinc.atlassian.net/wiki/spaces/EN/pages/2632777780/Postico+License).
 
-If you want to use the native PostgresCLI client, you can use the command `docker exec -it fieldsets-postgres /bin/bash -c "export PGPASSWORD=\${POSTGRES_PASSWORD}; psql --host \${POSTGRES_HOST} --username \${POSTGRES_USER} --port \${POSTGRES_PORT} --dbname \${POSTGRES_DB}"` to use the client within the container.
+If you want to use the native PostgresCLI client, you can use the command `docker exec -it fieldsets-postgres /bin/bash -c "export PGPASSWORD=\${FIELDSETS_DB_PASSWORD}; psql --host \${FIELDSETS_DB_HOST} --username \${FIELDSETS_DB_USER} --port \${FIELDSETS_DB_PORT} --dbname \${FIELDSETS_DB_PORT}"` to use the client within the container.

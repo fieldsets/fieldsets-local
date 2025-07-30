@@ -1,43 +1,62 @@
-#!/usr/bin/env pwsh
+#!/usr/bin/env -S pwsh -NoLogo -WorkingDirectory "/usr/local/fieldsets/"
 
 $envname = [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
 $hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
-
-$fieldsets_local_host = [System.Environment]::GetEnvironmentVariable('FIELDSETS_LOCAL_HOST')
-$home_path = [System.Environment]::GetEnvironmentVariable('HOME')
-$session_host = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_HOST')
-$ssh_key_path = [System.Environment]::GetEnvironmentVariable('SSH_KEY_PATH')
-$session_port = [System.Environment]::GetEnvironmentVariable('SSH_PORT')
-$session_key = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_KEY')
-
-if ($ssh_key_path.StartsWith('~')) {
-    $ssh_key_path = $ssh_key_path.Replace('~', "$($home_path)")
-}
-$session_key_path = [System.IO.Path]::GetFullPath((Join-Path -Path $ssh_key_path -ChildPath $session_key))
-if (($null -eq $session_host) -or ("$($session_host)".Length -eq 0)) {
-    $session_host = $fieldsets_local_host
-}
-
-# Initialize our pipeline session
-$pipeline_session = New-PSSession -Name FieldsetsLocalSession -HostName $session_host -Options @{StrictHostKeyChecking='no'} -Port $session_port -KeyFilePath $session_key_path
-Enter-PSSession -Session $pipeline_session
+$session_port = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_PORT')
+$session_key_filename = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_KEY')
+$session_key_path = [System.Environment]::GetEnvironmentVariable('FIELDSETS_SESSION_KEY_PATH')
+$cache_host = [System.Environment]::GetEnvironmentVariable('FIELDSETS_CACHE_HOST')
 $module_path = [System.IO.Path]::GetFullPath("/usr/local/fieldsets/lib/")
 Import-Module -Name "$($module_path)/fieldsets.psm1"
 
-Set-Variable -Name schema_registry -Value ([ordered]@{}) -Scope Global -Description "Fieldsets Schema Definition Registry"
+addCoreHooks
 
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", 'pipeline-init')
-[System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", '00')
+Write-Host "## Pipeline Initializing ##"
+performActionHook -Name 'fieldsets_set_local_env'
 
-$plugins = cache_get -key 'plugin_priority_queue'
-Write-Host $plugins
+$session_key = Join-Path -Path "$($session_key_path)" -ChildPath "$($session_key_filename)"
 
-Push-Location '/usr/local/fieldsets/'
-$phase_scripts = Get-Item -Path "/docker-entrypoint-init.d/*.sh" | Select-Object BaseName, FullName
+$hook_args = @{
+    HostName = $cache_host
+    Port = $session_port
+    Key = $session_key
+}
+$connect_info = parseDataHook -Name 'fieldsets_session_connect_info' -Data $hook_args
+
+session_connect @connect_info
+
+performActionHook -Name 'fieldsets_set_session_env'
+# Start Fresh & Flush
+# session_cache_flush
+
+Write-Output "## Initializing Session Cache ##"
+cache_init
+
+# Import the rest of the modules
+# Run through all plugins in priority order
+$phase_scripts = Get-Item -Path "/docker-entrypoint-init.d/*-phase.sh"
+
 foreach ($phase_path in $phase_scripts) {
     Write-Host $phase_path.FullName
-    $stdErrLog = "/data/logs/pipeline.stderr.log"
-    $stdOutLog = "/data/logs/pipeline.stdout.log"
+    $phase_priority, $phase_name = ($phase_path.BaseName).Split('-')[0,1]
+
+    $phase_details = @{
+        phase = $phase_name
+        phase_priority = $phase_priority
+        phase_path = $phase_path.FullName
+        phase_status = 'active'
+        current = $phase_name
+        current_priority = $phase_priority
+        current_path = $phase_path.FullName
+        current_status = 'active'
+    }
+    $phase_json = ConvertTo-Json -InputObject $phase_details -Compress -Depth 5
+    cache_set -Key 'fieldsets_pipeline_phase' -Type 'object' -Value $($phase_json) -Expires 0
+
+    performActionHook -Name "fieldsets_pre_$($phase_name)_phase"
+
+    $stdErrLog = "/data/logs/pipeline.phase.stderr.log"
+    $stdOutLog = "/data/logs/pipeline.phase.stdout.log"
     $processOptions = @{
         Filepath = "$($phase_path.FullName)"
         RedirectStandardInput = "/dev/null"
@@ -46,7 +65,28 @@ foreach ($phase_path in $phase_scripts) {
     }
     Start-Process @processOptions -Wait
     Get-Content $stdErrLog, $stdOutLog | ForEach-Object { $_ -replace '\x1b\[[0-9;]*m','' } | Out-File "/usr/local/fieldsets/data/logs/$($envname)/$($hostname)/pipeline.log" -Append
-}
-Pop-Location
 
-Exit-PSSession
+    performActionHook -Name "fieldsets_post_$($phase_name)_phase"
+
+    $phase_details['parent_status'] = 'complete'
+    $phase_json = ConvertTo-Json -InputObject $phase_details -Compress -Depth 5
+    cache_set -Key 'fieldsets_pipeline_phase' -Type 'object' -Value $($phase_json) -Expires 0
+}
+
+$extract_targets = parseDataHook -Name 'fieldsets_add_extract_targets' -Data @{}
+$transform_targets = parseDataHook -Name 'fieldsets_add_transform_targets' -Data @{}
+$load_targets = parseDataHook -Name 'fieldsets_add_load_targets' -Data @{}
+
+$extract_targets_json = ConvertTo-Json -InputObject $extract_targets -Compress -Depth 5
+cache_set -Key 'fieldsets_extract_targets' -Type 'object' -Value $($extract_targets_json) -Expires 0
+
+$transform_targets_json = ConvertTo-Json -InputObject $transform_targets -Compress -Depth 5
+cache_set -Key 'fieldsets_transform_targets' -Type 'object' -Value $($transform_targets_json) -Expires 0
+
+$load_targets_json = ConvertTo-Json -InputObject $load_targets -Compress -Depth 5
+cache_set -Key 'fieldsets_load_targets' -Type 'object' -Value $($load_targets_json) -Expires 0
+
+session_disconnect
+Write-Host "## Session Cache Set ##"
+Write-Host "## Pipeline Complete ##"
+Exit

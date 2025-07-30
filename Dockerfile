@@ -63,6 +63,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
         groff \
         libpq5 \
         libpq-dev \
+        memcached \
+        libmemcached-tools \
         unzip && \
     bash /root/.local/bin/root-certs.sh /tmp/certs/ && \
     install -d /usr/share/postgresql-common/pgdg && \
@@ -92,7 +94,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
     echo "Port ${SSH_PORT:-1022}" >> /etc/ssh/sshd_config.d/fieldsets.conf
 
 # These can take a while to install so we move the calls into a new layer in case of build failures
-RUN /usr/bin/pwsh -NoLogo -NonInteractive -Command "& {Install-Package Npgsql -Source NuGet.org -Scope AllUsers -Force}" && \
+RUN /usr/bin/pwsh -NoLogo -NonInteractive -Command "& {Register-PackageSource -Name NuGet.org -Location https://www.nuget.org/api/v2 -ProviderName NuGet -Force}" && \
+    /usr/bin/pwsh -NoLogo -NonInteractive -Command "& {Install-Package Npgsql -Source NuGet.org -Scope AllUsers -Force}" && \
     /usr/bin/pwsh -NoLogo -NonInteractive -Command "& {Install-Package ClickHouse.Client -Source NuGet.org -Scope AllUsers -Force}" && \
     /usr/bin/pwsh -NoLogo -NonInteractive -Command "& {Install-Package Microsoft.Extensions.Logging.Abstractions -RequiredVersion ${DOTNET_VERSION}.0.0 -Source NuGet.org -Scope AllUsers -Force}"
 
