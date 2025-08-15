@@ -19,6 +19,8 @@ $log_path = "/usr/local/fieldsets/data/logs/$($envname)/$($hostname)"
 if (!(Test-Path -Path "$($log_path)/$($script_token).log")) {
     New-Item -Path "$($log_path)" -Name "$($script_token).log" -ItemType File | Out-Null
 }
+$stdErrLog = "/data/logs/$($script_token).stderr.log"
+$stdOutLog = "/data/logs/$($script_token).stdout.log"
 
 # Create a Powershell session which all of our framework code will be executed in.
 foreach ($plugin_dirs in $plugins_priority_list.Values) {
@@ -30,8 +32,6 @@ foreach ($plugin_dirs in $plugins_priority_list.Values) {
                 if (Test-Path -Path "$($plugin.FullName)/$($phase).sh") {
                     Set-Location -Path "$($plugin.FullName)" | Out-Null
                     chmod +x "$($plugin.FullName)/$($phase).sh" | Out-Null
-                    $stdErrLog = "/data/logs/$($script_token).stderr.log"
-                    $stdOutLog = "/data/logs/$($script_token).stdout.log"
                     $processOptions = @{
                         Filepath = "$($plugin.FullName)/$($phase).sh"
                         RedirectStandardInput = "/dev/null"
@@ -39,11 +39,12 @@ foreach ($plugin_dirs in $plugins_priority_list.Values) {
                         RedirectStandardOutput = $stdOutLog
                     }
                     Start-Process @processOptions
-                    Get-Content $stdErrLog, $stdOutLog | ForEach-Object { $_ -replace '\x1b\[[0-9;]*m','' } | Out-File "$($log_path)/$($script_token).log" -Append
                 }
             }
         }
     }
 }
 Set-Location -Path "/usr/local/fieldsets/apps/" | Out-Null
+
+Get-Content $stdErrLog, $stdOutLog | ForEach-Object { $_ -replace '\x1b\[[0-9;]*m','' } | Out-File "$($log_path)/$($script_token).log" -Append
 Exit

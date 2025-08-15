@@ -20,7 +20,7 @@ Set-Location -Path "/usr/local/fieldsets/plugins/" | Out-Null
 # Ordered plugins by priority
 $envname = [System.Environment]::GetEnvironmentVariable('ENVIRONMENT')
 $hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
-$lockfile_path = "/usr/local/fieldsets/data/checkpoints/$($envname)/$($hostname)/phases/"
+$lockfile_path = "/data/checkpoints/$($envname)/$($hostname)/phases/"
 $log_path = "/usr/local/fieldsets/data/logs/$($envname)/$($hostname)"
 
 if (!(Test-Path -Path "$($log_path)/$($script_token).log")) {

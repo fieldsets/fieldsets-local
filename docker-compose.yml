@@ -31,7 +31,7 @@ services:
             FIELDSETS_LOCAL_VERSION: ${FIELDSETS_LOCAL_VERSION:-latest}
             PUID: ${LOCAL_UID:-1000}
             PGID: ${LOCAL_GID:-1000}
-            CHECKPOINT_PATH: ${CHECKPOINT_PATH:-/checkpoints/}
+            CHECKPOINT_PATH: ${CHECKPOINT_PATH:-/data/checkpoints/}
             ENABLE_DEBUG_MODE: ${ENABLE_DEBUG_MODE:-true}
             ENABLE_LOGGING: ${ENABLE_LOGGING:-false} # Write logs to DB
             FIELDSETS_DB: ${FIELDSETS_DB:-postgres}

@@ -23,23 +23,26 @@ $hostname = [System.Environment]::GetEnvironmentVariable('HOSTNAME')
 [System.Environment]::SetEnvironmentVariable("FieldSetsLastCheckpoint", $null)
 [System.Environment]::SetEnvironmentVariable("FieldSetsLastPriority", $null)
 
-$lockfile_path = "/usr/local/fieldsets/data/checkpoints/$($envname)/$($hostname)/phases/"
+$lockfile_path = "/data/checkpoints/$($envname)/$($hostname)/phases/"
 $log_path = "/usr/local/fieldsets/data/logs/$($envname)/$($hostname)"
 
 # Create our path if it does not exist
-if (!(Test-Path -Path "/usr/local/fieldsets/data/checkpoints/")) {
+if (!(Test-Path -Path "/data/checkpoints/")) {
     # Its our first run. So lets display a message
     Write-Host "Fieldsets Framework is initializing. This first startup may take a while to install any missing libraries and modules."
-    New-Item -Path "/usr/local/fieldsets/data" -Name "checkpoints" -ItemType Directory | Out-Null
+    New-Item -Path "/data" -Name "checkpoints" -ItemType Directory | Out-Null
 }
-if (!(Test-Path -Path "/usr/local/fieldsets/data/checkpoints/$($envname)")) {
-    New-Item -Path "/usr/local/fieldsets/data/checkpoints" -Name "$($envname)" -ItemType Directory | Out-Null
+if (!(Test-Path -Path "/data/logs/")) {
+    New-Item -Path "/data" -Name "logs" -ItemType Directory | Out-Null
 }
-if (!(Test-Path -Path "/usr/local/fieldsets/data/checkpoints/$($envname)/$($hostname)")) {
-    New-Item -Path "/usr/local/fieldsets/data/checkpoints/$($envname)" -Name "$($hostname)" -ItemType Directory | Out-Null
+if (!(Test-Path -Path "/data/checkpoints/$($envname)")) {
+    New-Item -Path "/data/checkpoints" -Name "$($envname)" -ItemType Directory | Out-Null
+}
+if (!(Test-Path -Path "/data/checkpoints/$($envname)/$($hostname)")) {
+    New-Item -Path "/data/checkpoints/$($envname)" -Name "$($hostname)" -ItemType Directory | Out-Null
 }
 if (!(Test-Path -Path "$($lockfile_path)")) {
-    New-Item -Path "/usr/local/fieldsets/data/checkpoints/$($envname)/$($hostname)" -Name "phases" -ItemType Directory | Out-Null
+    New-Item -Path "/data/checkpoints/$($envname)/$($hostname)" -Name "phases" -ItemType Directory | Out-Null
 }
 if (!(Test-Path -Path "$($lockfile_path)/$($phase)/")) {
     New-Item -Path "$($lockfile_path)" -Name "$($phase)" -ItemType Directory | Out-Null

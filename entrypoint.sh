@@ -17,7 +17,7 @@ set -eEa -o pipefail
 #===
 
 export PGPASSWORD=${FIELDSETS_DB_PASSWORD}
-export DATA_PATH=/checkpoints/${ENVIRONMENT}/fieldsets-local/
+export DATA_PATH=/data/checkpoints/${ENVIRONMENT}/fieldsets-local/
 export PRIORITY=0
 
 #===
@@ -77,7 +77,12 @@ start() {
     fi
 
     chmod +x /usr/local/fieldsets/bin/pipeline.sh
-    nohup /usr/local/fieldsets/bin/pipeline.sh "-pipeline_pid $($pipeline_pid)">> ${LOG_PATH}/pipeline.log 2>&1 &
+    chmod +x /usr/local/fieldsets/bin/watcher.sh
+    chmod +x /usr/local/fieldsets/bin/scheduler.sh
+    chmod +x /usr/local/fieldsets/bin/parse.sh
+    chmod +x /usr/local/fieldsets/bin/perform.sh
+
+    nohup /usr/local/fieldsets/bin/pipeline.sh >> ${LOG_PATH}/pipeline.log 2>&1 &
 
     log "Local Startup Complete."
 }
